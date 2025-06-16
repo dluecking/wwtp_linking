@@ -1,0 +1,10 @@
+# Ignore entire directories
+data/
+deprecated/
+log/
+intermediate/
+testing/
+
+# Ignore test scripts
+test*
+*.pdf
