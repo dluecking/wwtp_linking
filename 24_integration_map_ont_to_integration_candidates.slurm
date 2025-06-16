@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=16    
 #SBATCH --time=02:00:00     
 #SBATCH --mem=256G             
-#SBATCH --array=1-23 # up to 23
+#SBATCH --array=2-23%5 # up to 23
 
 
 # load modules
@@ -51,9 +51,6 @@ samtools view -b -F 4 -@ "$SLURM_CPUS_PER_TASK" -T "$REF_FILE" "$SAM" > "$BAM"
 # sort and index
 samtools sort -@ "$SLURM_CPUS_PER_TASK" "$BAM" -o "$BAM_SORTED"
 samtools index -@ "$SLURM_CPUS_PER_TASK" "$BAM_SORTED"
-
-# calculate coverage # we will be doing this later
-# samtools coverage "$BAM_SORTED" > "$COV_FILE" # Ensure COV_FILE is defined if uncommented
 
 # remove sam and unsorted bam file, they are too big!
 rm "$SAM"
