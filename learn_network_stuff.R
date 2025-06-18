@@ -50,9 +50,9 @@ V(g_int_b)$type <- contig_df$type[match(V(g_int_b)$name, contig_df$contig_id)]
 contig_df <- contig_df %>% 
   mutate(
     color = case_when(
-      str_ends(contig_id, "vph") ~ "gold",
+      str_ends(contig_id, "vph") ~ "goldenrod1",
       str_ends(contig_id, "lc")  ~ "seagreen",
-      str_ends(contig_id, "plv") ~ "orange",
+      str_ends(contig_id, "plv") ~ "hotpink",
       TRUE ~ "steelblue"
     )
   )
@@ -64,8 +64,6 @@ g_int_b
 plot(g_int_b,edge.arrow.size=1, vertex.size=7, 
      vertex.frame.color="gray", vertex.label.color="black", 
      vertex.label.cex=.5, vertex.label.dist=1, edge.curved=0.1,layout=layout_with_fr)
-
-
 
 # CENTRALITY (we test this for gene sharing)
 g_gene_sharing <- graph_from_data_frame(edgelist_gene_sharing, directed = T)
@@ -83,7 +81,11 @@ plot(g_gene_sharing,edge.arrow.size=.01, vertex.size=3,
      vertex.label.cex=.5, vertex.label.dist=1, edge.curved=0.1,layout=layout_with_fr)
 
 
+E(g_gene_sharing)
 
+# NOTES
+cluster_walktrap(g_gene_sharing)
+cluster_louvain(g_gene_sharing)
 
 
 

@@ -8,11 +8,10 @@ library(ggplot2)
 library(data.table)
 library(stringr)
 library(tidyr)
-library(Hmisc)
+library(cowplot)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-# setwd("/lisc/scratch/dome/luecking/projects/wwtp_linking")
 
 
 # load sample data --------------------------------------------------------
@@ -74,43 +73,43 @@ if (length(list_of_dfs) > 0) {
 } else {
   occurance_df <- data.table("contig_id" = as.character())
 }
+rm(list_of_dfs, tmp_df, sample_names, current_ont_id_from_file, file_name, file_path, i, match_index, coverage_dir, coverage_files, sample_short_name)
+
+
+# only keep connected contigs ---------------------------------------------
+
+lcs_to_keep <- fread("intermediate/network/list_of_connected_lcs.txt", header = F)
+names(lcs_to_keep) <- c("contig_id")
+
+# Filter the dataframe
+occurance_filtered <- occurance_df %>%
+  filter(
+    # Condition 1: Keep rows where col1 does NOT end with "_lc"
+    !grepl("_lc$", contig_id) |
+      # Condition 2: OR (if col1 DOES end with "_lc") keep it if it's found in contigs_to_keep
+      (grepl("_lc$", contig_id) & contig_id %in% lcs_to_keep$contig_id)
+  )
+
+
 
 
 # calculate spearman ------------------------------------------------------
 
-numeric_matrix <- occurance_df %>%
+numeric_matrix <- occurance_filtered %>%
   tibble::column_to_rownames("contig_id") %>%
   as.matrix()
 
-
-# new try wih hmisc
+# Transpose the matrix so contigs are columns and samples are rows
 transposed_matrix <- t(numeric_matrix)
+
 print("Dimensions of matrix for correlation (samples x contigs):")
 print(dim(transposed_matrix))
 
-# make sure its matrix
-transposed_matrix_mat <- as.matrix(transposed_matrix)
-# calc spearman correlation
-cor_results <- rcorr(transposed_matrix_mat, type = "spearman")
+# calc spearman
+cor_matrix <- cor(transposed_matrix, method = "spearman") 
 
-cor_matrix <- cor_results$r # Correlation matrix
-# cor_pvalues <- cor_results$P # P-value matrix
-
-# remove duplicate information
-cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
+# how does it look?
 print(head(cor_matrix[, 1:4]))
-
-
-# # Transpose the matrix so contigs are columns and samples are rows
-# transposed_matrix <- t(numeric_matrix)
-# 
-# print("Dimensions of matrix for correlation (samples x contigs):")
-# print(dim(transposed_matrix))
-# 
-# # calc spearman
-# cor_matrix <- cor(transposed_matrix, method = "spearman", use = "pairwise.complete.obs") # Or "complete.obs"
-# # how does it look?
-# print(head(cor_matrix[, 1:4]))
 
 # remove duplicate information
 cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
@@ -120,4 +119,58 @@ edge_list <- as.data.frame(as.table(cor_matrix)) %>%
   na.omit() %>%
   rename(from = Var1, to = Var2, spearman_ont = Freq)
 
-fwrite(edge_list, "intermediate/network/occurance_ont.csv")
+edge_list$absolut_spearman <- abs(edge_list$spearman_ont)
+edge_list <- edge_list %>% 
+  mutate(correlation = case_when(
+    spearman_ont >= 0 ~ "positive",
+    spearman_ont < 0 ~ "negative"
+  ))
+
+
+# save edgelist -----------------------------------------------------------
+
+fwrite(edge_list %>% filter(absolut_spearman >= 0.508), "intermediate/network/occurance_ont.csv")
+
+
+# # quick exploration of what different cutoffs mean ------------------------
+# 
+# cutoffs <- c(0.5, 0.6, 0.7, 0.8, 0.9)
+# 
+# df <- data.table()
+# 
+# for(CUTOFF in cutoffs){
+#   a <- edge_list %>% 
+#     filter(absolut_spearman >= CUTOFF)
+#   all_contigs <- data.table(contig_id = unique(c(as.character(a$from), as.character(a$to))),
+#                             type = "")
+#   all_contigs <- all_contigs %>%
+#     mutate(
+#       type = case_when(
+#         str_ends(contig_id, "vph") ~ "vph",
+#         str_ends(contig_id, "lc")  ~ "lc",
+#         str_ends(contig_id, "plv") ~ "plv",
+#         TRUE ~ "gv"
+#       )
+#     )
+#   
+#   tmp_df <- as.data.table(table(all_contigs$type))
+#   tmp_df$cutoff <- CUTOFF
+#   
+#   df <- rbind(df, tmp_df)
+#   
+# }
+# 
+# names(df) <- c("type", "n", "cutoff")
+# 
+# df$total_of_that_type <- 0 
+# df$total_of_that_type[df$type == "vph"] <- 15
+# df$total_of_that_type[df$type == "lc"] <- 4001
+# df$total_of_that_type[df$type == "plv"] <- 14
+# df$total_of_that_type[df$type == "gv"] <- 63
+# 
+# df$percent <- df$n / df$total_of_that_type * 100
+# 
+# ggplot(df, aes(x = cutoff, fill = type, y = percent)) +
+#   geom_bar(stat = "identity", color = "black", alpha = 0.8, position = "dodge") +
+#   theme_cowplot() +
+#   ggtitle("[%] of contigs included in network, per spearman cutoff")
