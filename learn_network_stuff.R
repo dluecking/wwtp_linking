@@ -17,7 +17,6 @@ library(igraphdata)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 
-
 # load data ---------------------------------------------------------------
 
 edgelist_crispr <- fread("intermediate/network/crispr.csv")

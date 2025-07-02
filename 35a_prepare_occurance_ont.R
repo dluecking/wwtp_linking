@@ -127,9 +127,27 @@ edge_list <- edge_list %>%
   ))
 
 
+hist(x = edge_list$spearman_ont,
+     freq = FALSE, # Plot densities instead of frequencies
+     main = "Histogram with Density Curve",
+     xlab = "Values",
+     col = "lightblue",
+     border = "black")
+lines(density(edge_list$spearman_ont), col = "red", lwd = 2)
+
+qqnorm(edge_list$spearman_ont,
+       main = "Normal Q-Q Plot",
+       xlab = "Theoretical Quantiles",
+       ylab = "Sample Quantiles")
+qqline(edge_list$spearman_ont, col = "blue", lwd = 2)
+
+
+
+
+
 # save edgelist -----------------------------------------------------------
 
-fwrite(edge_list %>% filter(absolut_spearman >= 0.508), "intermediate/network/occurance_ont.csv")
+fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ont.csv")
 
 
 # # quick exploration of what different cutoffs mean ------------------------

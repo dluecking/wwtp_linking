@@ -126,7 +126,7 @@ edge_list <- edge_list %>%
 
 # save that to a file -----------------------------------------------------
 
-fwrite(edge_list %>% filter(absolut_spearman >= 0.508), "intermediate/network/occurance_ill.csv")
+fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ill.csv")
 
 
 
