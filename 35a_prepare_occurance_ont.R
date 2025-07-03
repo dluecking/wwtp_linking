@@ -93,6 +93,29 @@ occurance_filtered <- occurance_df %>%
 
 
 
+
+
+# remove contigs for which we have a weak signal --------------------------
+# the idea is: if you are only present in very few samples, you create noise (??)
+
+X_threshold <- 1.0 # Replace with your desired minimum value (X)
+Y_columns <- 5     # Replace with your desired minimum number of columns (Y)
+
+# Assuming 'occurance_filtered' is your data frame
+
+occurance_filtered <- occurance_filtered %>%
+  rowwise() %>% # Process row by row
+  mutate(
+    # Count how many non-contig_id columns have a value > X_threshold
+    count_above_X = sum(c_across(-contig_id) > X_threshold, na.rm = TRUE)
+  ) %>%
+  filter(count_above_X >= Y_columns) %>% # Keep rows where the count is at least Y_columns
+  select(-count_above_X) # Remove the temporary count_above_X column if not needed
+
+
+
+
+
 # calculate spearman ------------------------------------------------------
 
 numeric_matrix <- occurance_filtered %>%
@@ -135,19 +158,19 @@ hist(x = edge_list$spearman_ont,
      border = "black")
 lines(density(edge_list$spearman_ont), col = "red", lwd = 2)
 
-qqnorm(edge_list$spearman_ont,
-       main = "Normal Q-Q Plot",
-       xlab = "Theoretical Quantiles",
-       ylab = "Sample Quantiles")
-qqline(edge_list$spearman_ont, col = "blue", lwd = 2)
-
+# qqnorm(edge_list$spearman_ont,
+#        main = "Normal Q-Q Plot",
+#        xlab = "Theoretical Quantiles",
+#        ylab = "Sample Quantiles")
+# qqline(edge_list$spearman_ont, col = "blue", lwd = 2)
+# 
 
 
 
 
 # save edgelist -----------------------------------------------------------
 
-fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ont.csv")
+fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ont_test.csv")
 
 
 # # quick exploration of what different cutoffs mean ------------------------

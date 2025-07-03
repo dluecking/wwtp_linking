@@ -90,6 +90,24 @@ occurance_filtered <- occurance_df %>%
       (grepl("_lc$", contig_id) & contig_id %in% lcs_to_keep$contig_id)
   )
 
+# remove contigs for which we have a weak signal --------------------------
+# the idea is: if you are only present in very few samples, you create noise (??)
+
+X_threshold <- 1.0 # Replace with your desired minimum value (X)
+Y_columns <- 5     # Replace with your desired minimum number of columns (Y)
+
+# Assuming 'occurance_filtered' is your data frame
+
+occurance_filtered <- occurance_filtered %>%
+  rowwise() %>% # Process row by row
+  mutate(
+    # Count how many non-contig_id columns have a value > X_threshold
+    count_above_X = sum(c_across(-contig_id) > X_threshold, na.rm = TRUE)
+  ) %>%
+  filter(count_above_X >= Y_columns) %>% # Keep rows where the count is at least Y_columns
+  select(-count_above_X) # Remove the temporary count_above_X column if not needed
+
+
 
 # calculate spearman ------------------------------------------------------
 
@@ -126,7 +144,7 @@ edge_list <- edge_list %>%
 
 # save that to a file -----------------------------------------------------
 
-fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ill.csv")
+fwrite(edge_list %>% filter(absolut_spearman >= 0.425), "intermediate/network/occurance_ill_test.csv")
 
 
 

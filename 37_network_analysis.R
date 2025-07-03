@@ -50,7 +50,7 @@ edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
 edgelist_occurance_ill <- fread("intermediate/network/occurance_ill.csv")
-edgelist_occurance_ont <- fread("intermediate/network/occurance_ont.csv")
+edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_test.csv")
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
 
@@ -87,10 +87,9 @@ big_connection_df <- rbind(
 # try to get to facets ----------------------------------------------------
 
 # get a list of ids that are part of the specific subcluster
-
-
 # this first retains only connections which are of a specific type (e.g. "gene_sharing")
-df <- big_connection_df %>% filter(!str_detect(type, ".*occurance.*")) %>% 
+df <- big_connection_df %>% 
+  # filter(!str_detect(type, ".*occurance.*")) %>% 
   filter(type == "gene_sharing")
 
 graph <- as_tbl_graph(df, directed = F)
@@ -137,12 +136,14 @@ ggraph(layout) +
 # another idea: GV-LC partners --------------------------------------------
 
 multi_connection_pairs <- big_connection_df %>%
+  filter(!str_detect(type, ".*occurance_ill.*")) %>%
+  filter(!str_detect(type, "negative")) %>% 
   group_by(from, to) %>%
   summarise(
     unique_connection_types = n_distinct(type)
   ) %>%
   ungroup() %>% # Ungroup to remove grouping structure
-  filter(unique_connection_types > 2)
+  filter(unique_connection_types >= 2)
 
 
 # now add information about type
@@ -156,12 +157,13 @@ multi_connection_pairs$connection_type <- paste0(multi_connection_pairs$from_typ
 multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "gv-lc"] <- "lc-gv"
 multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "plv-lc"] <- "lc-plv"
 
+# filter for only virus-host-pairs
+virus_host_pairs <- multi_connection_pairs %>% 
+  filter(connection_type == "lc-gv")
 
 
-
-
-
-
+GVs_with_host <- unique(c(virus_host_pairs$from, virus_host_pairs$to))
+GVs_with_host <- GVs_with_host[!grepl("lc$", GVs_with_host)]
 
 
 

@@ -34,5 +34,4 @@ if(!file.exists("intermediate/lc_tax/lc_tax_info_df.csv")){
 }
 
 
-taxize::classification(data$majority_organism[1], db = "ncbi")
 
