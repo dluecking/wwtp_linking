@@ -164,7 +164,7 @@ g <- as_tbl_graph(g)
 
 layout <- create_layout(g, layout = "fr")
 ggiraph_plot <- ggraph(layout) +
-  geom_edge_link(aes(color = type)) +
+  geom_edge_link(aes(color = type), show.legend = F) +
   geom_point_interactive(size = 3,
                          alpha = 0.8,
                          aes(x = x, 
@@ -180,11 +180,21 @@ ggiraph_plot <- ggraph(layout) +
     plv = "hotpink",
     gv = "steelblue"
   )) +
-  facet_edges(~edge_type)
+  facet_edges(~edge_type) +
+  theme_classic() +
+  theme(legend.position = "bottom") +
+  theme(
+    axis.text.x = element_blank(),   # Remove x-axis labels
+    axis.text.y = element_blank(),   # Remove y-axis labels
+    axis.title.x = element_blank(),  # Remove x-axis title
+    axis.title.y = element_blank(),  # Remove y-axis title
+    axis.ticks = element_blank(),    # Remove axis tick marks
+    axis.line = element_blank()      # Remove axis lines
+  )
 
-girafe(ggobj = ggiraph_plot)
-
-
+interactive_plot <- girafe(ggobj = ggiraph_plot)
+htmltools::save_html(interactive_plot, "final/subcluster_1_interactive.html")
+interactive_plot
 
 # another idea: GV-LC partners --------------------------------------------
 
