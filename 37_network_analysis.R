@@ -11,7 +11,9 @@ library(igraph)
 library(igraphdata)
 library(ggraph)
 library(cowplot)
+library(googlesheets4)
 library(tidygraph)
+library(ggiraph)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -43,14 +45,50 @@ contig_df <- contig_df %>%
     )
   )
 
+# tax information
+# load GV info
+sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474"
+GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
+  select(shortname, personal_assessment_order)
+
+# load tax info
+lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
+lc_tax_info_short <- rbindlist(lapply(list.files("intermediate/lc_tax/", pattern = ".*filtered.csv", full.names = TRUE), fread))
+
+# add tax info to contig_df
+# first all lcs:
+contig_df$tax_info <- lc_tax_info_short$majority_organism[match(contig_df$contig_id, lc_tax_info_short$contig_id)]
+
+# then mutate
+contig_df <- contig_df %>% 
+  mutate(
+    tax_info = case_when(
+      str_ends(contig_id, "vph") ~ contig_id,
+      str_ends(contig_id, "plv") ~ contig_id,
+      str_ends(contig_id, "lc") ~ tax_info,
+      TRUE ~ "GV - to be added"
+    )
+  )
+
+# then add GV
+for(i in 1:nrow(contig_df)){
+  if(contig_df$type[i] == "gv")
+    if(length((GV_info$personal_assessment_order[GV_info == contig_df$contig_id[i]])) > 0){
+      contig_df$tax_info[i] <- GV_info$personal_assessment_order[GV_info == contig_df$contig_id[i]]
+    } else {
+      contig_df$tax_info[i] <- "unknown"
+    }
+}
+
+
 # load data ---------------------------------------------------------------
 
 edgelist_crispr <- fread("intermediate/network/crispr.csv")
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
-edgelist_occurance_ill <- fread("intermediate/network/occurance_ill.csv")
-edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_test.csv")
+edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_test.csv") # ATTENTION! This one is currently set to the stricter occurance filter
+edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_test.csv") # ATTENTION! This one is currently set to the stricter occurance filter
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
 
@@ -101,6 +139,7 @@ target_group <- graph %>%
   filter(name == "Aved_tig00303955-10-54120_vph") %>%
   # filter(name == "Hjor_1") %>%
   pull(louvain_group)
+
 subgraph <- graph %>%
   filter(louvain_group == target_group)
 
@@ -115,55 +154,131 @@ small_edge_df <- big_connection_df %>%
 
 g <- graph_from_data_frame(small_edge_df, directed = F, small_node_df)
 V(g)$node_type <- contig_df$type[match(V(g)$name, contig_df$contig_id)]
+V(g)$tax_info <- contig_df$tax_info[match(V(g)$name, contig_df$contig_id)]
+
 E(g)$edge_type <- as.factor(E(g)$type)
+
+
 
 g <- as_tbl_graph(g)
 
-
 layout <- create_layout(g, layout = "fr")
-ggraph(layout) +
+ggiraph_plot <- ggraph(layout) +
   geom_edge_link(aes(color = type)) +
-  geom_node_point(aes(color = node_type), size = 5, alpha = 0.8) +
+  geom_point_interactive(size = 3,
+                         alpha = 0.8,
+                         aes(x = x, 
+                             y = y, 
+                             color = node_type,
+                             data_id = name,
+                             tooltip = paste("Node ID:", name,
+                                             "\nType:", node_type,
+                                             "\nTaxonomy:", tax_info))) +
   scale_color_manual(values = c(
     vph = "goldenrod1",
     lc = "seagreen",
     plv = "hotpink",
     gv = "steelblue"
   )) +
-  facet_edges(~edge_type) 
+  facet_edges(~edge_type)
+
+girafe(ggobj = ggiraph_plot)
+
 
 
 # another idea: GV-LC partners --------------------------------------------
 
-multi_connection_pairs <- big_connection_df %>%
-  filter(!str_detect(type, ".*occurance_ill.*")) %>%
-  filter(!str_detect(type, "negative")) %>% 
-  group_by(from, to) %>%
-  summarise(
-    unique_connection_types = n_distinct(type)
-  ) %>%
-  ungroup() %>% # Ungroup to remove grouping structure
-  filter(unique_connection_types >= 2)
 
 
-# now add information about type
-multi_connection_pairs$from_type <- contig_df$type[match(multi_connection_pairs$from, contig_df$contig_id)]
-multi_connection_pairs$to_type <- contig_df$type[match(multi_connection_pairs$to, contig_df$contig_id)]
+VIRUS_HOST_df <- data.table(gv_id = as.character(),
+                            host_id = as.character(),
+                            gv_order = as.character(),
+                            host_tax = as.character(),
+                            no_of_layers = as.numeric(),
+                            layers = as.character()
+)
 
 
-multi_connection_pairs$connection_type <- paste0(multi_connection_pairs$from_type, "-", multi_connection_pairs$to_type)
 
-# fix the reverse
-multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "gv-lc"] <- "lc-gv"
-multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "plv-lc"] <- "lc-plv"
+# Create VIRUS_HOST_df using data.table operations
+VIRUS_HOST_df <- big_connection_df[
+  # Step 1: Identify if 'from'/'to' are potential hosts or GVs
+  # .SD is a special data.table symbol referring to the subset of data for a group
+  , `:=`(
+    is_from_host = endsWith(from, "_lc"),
+    is_to_host = endsWith(to, "_lc"),
+    is_from_gv = from %in% GV_info$shortname,
+    is_to_gv = to %in% GV_info$shortname
+  )
+][
+  # Step 2: Assign gv_id and host_id based on a clear GV-Host pair
+  # fifelse is data.table's optimized ifelse
+  , `:=`(
+    gv_id = fifelse(is_from_gv & is_to_host, from,
+                    fifelse(is_to_gv & is_from_host, to, NA_character_)),
+    host_id = fifelse(is_from_gv & is_to_host, to,
+                      fifelse(is_to_gv & is_from_host, from, NA_character_))
+  )
+][
+  # Step 3: Filter out rows that don't represent a clear GV-Host interaction
+  !is.na(gv_id) & !is.na(host_id)
+][
+  # Step 4: Group by gv_id and host_id and summarize types
+  , .(
+    layers = paste(sort(unique(type)), collapse = ", "), # Collect and sort unique types
+    no_of_layers = uniqueN(type)                         # Count unique types
+  ), by = .(gv_id, host_id)
+][
+  # Step 5: Add placeholder columns and reorder
+  , `:=`(
+    gv_order = NA_character_, # Will be filled later
+    host_tax = NA_character_  # Will be filled later
+  )
+][
+  # Step 6: Select and reorder final columns
+  , .(gv_id, host_id, gv_order, host_tax, no_of_layers, layers)
+]
 
-# filter for only virus-host-pairs
-virus_host_pairs <- multi_connection_pairs %>% 
-  filter(connection_type == "lc-gv")
+VIRUS_HOST_df <- VIRUS_HOST_df %>% 
+  filter(no_of_layers >= 2)
+
+# add order information
+VIRUS_HOST_df$gv_order <- GV_info$personal_assessment_order[match(VIRUS_HOST_df$gv_id, GV_info$shortname)]
+VIRUS_HOST_df$host_tax <- lc_tax_info_short$majority_organism[match(VIRUS_HOST_df$host_id, lc_tax_info_short$contig_id)] 
+VIRUS_HOST_df$host_tax_perc <- as.character(lc_tax_info_short$pct_reads_assigned_to_majority_taxon[match(VIRUS_HOST_df$host_id, lc_tax_info_short$contig_id)])
+VIRUS_HOST_df$host_tax_perc <- str_replace(VIRUS_HOST_df$host_tax_perc, "\\.", ",")
+
+fwrite(VIRUS_HOST_df, "tmp_V_H_pairs.csv")
 
 
-GVs_with_host <- unique(c(virus_host_pairs$from, virus_host_pairs$to))
-GVs_with_host <- GVs_with_host[!grepl("lc$", GVs_with_host)]
+# multi_connection_pairs <- big_connection_df %>%
+#   filter(!str_detect(type, "negative")) %>% 
+#   group_by(from, to) %>%
+#   summarise(
+#     unique_connection_types = n_distinct(type)
+#   ) %>%
+#   ungroup() %>% # Ungroup to remove grouping structure
+#   filter(unique_connection_types >= 1)
+# 
+# 
+# # now add information about type
+# multi_connection_pairs$from_type <- contig_df$type[match(multi_connection_pairs$from, contig_df$contig_id)]
+# multi_connection_pairs$to_type <- contig_df$type[match(multi_connection_pairs$to, contig_df$contig_id)]
+# 
+# 
+# multi_connection_pairs$connection_type <- paste0(multi_connection_pairs$from_type, "-", multi_connection_pairs$to_type)
+# 
+# # fix the reverse
+# multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "gv-lc"] <- "lc-gv"
+# multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "plv-lc"] <- "lc-plv"
+# 
+# # filter for only virus-host-pairs
+# virus_host_pairs <- multi_connection_pairs %>% 
+#   filter(connection_type == "lc-gv")
+# 
+# 
+# GVs_with_host <- unique(c(virus_host_pairs$from, virus_host_pairs$to))
+# GVs_with_host <- GVs_with_host[!grepl("lc$", GVs_with_host)]
 
 
 
