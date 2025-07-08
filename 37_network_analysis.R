@@ -14,6 +14,9 @@ library(cowplot)
 library(googlesheets4)
 library(tidygraph)
 library(ggiraph)
+library(patchwork)
+library(tibble)
+library(ggsignif)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -56,8 +59,9 @@ lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
 lc_tax_info_short <- rbindlist(lapply(list.files("intermediate/lc_tax/", pattern = ".*filtered.csv", full.names = TRUE), fread))
 
 # add tax info to contig_df
-# first all lcs:
-contig_df$tax_info <- lc_tax_info_short$majority_organism[match(contig_df$contig_id, lc_tax_info_short$contig_id)]
+# first all lcs (which get a (76%) tag, which indicates the percentage of genes mapped to this tax)
+contig_df$tax_info <- paste0(lc_tax_info_short$majority_organism[match(contig_df$contig_id, lc_tax_info_short$contig_id)],
+                             " (", round(lc_tax_info_short$pct_reads_assigned_to_majority_taxon[match(contig_df$contig_id, lc_tax_info_short$contig_id)], 2), " %)")
 
 # then mutate
 contig_df <- contig_df %>% 
@@ -92,10 +96,6 @@ edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_test.csv") #
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
 
-
-
-
-
 # explore -----------------------------------------------------------------
 # create binary yes/no big list with connection type for each edge
 big_connection_df <- rbind(
@@ -122,79 +122,91 @@ big_connection_df <- rbind(
 
 
 
-# try to get to facets ----------------------------------------------------
+# visualize a subcluster surrounding a specific node ----------------------
 
-# get a list of ids that are part of the specific subcluster
-# this first retains only connections which are of a specific type (e.g. "gene_sharing")
-df <- big_connection_df %>% 
-  # filter(!str_detect(type, ".*occurance.*")) %>% 
-  filter(type == "gene_sharing")
+# CONTIG_OF_INTEREST <- "Aved_tig00303955-10-54120_vph" # thats the good one
+CONTIG_OF_INTEREST <- "Vibo_2_3_4"
 
-graph <- as_tbl_graph(df, directed = F)
-graph <- graph %>% 
-  mutate(louvain_group = group_louvain())
+{
+  # get a list of ids that are part of the specific subcluster
+  # this first retains only connections which are of a specific type (e.g. "gene_sharing")
+  df <- big_connection_df %>% 
+    filter(!str_detect(type, ".*occurance.*")) %>% 
+    filter(type != "integration_middle")
+  
+  
+  graph <- as_tbl_graph(df, directed = F)
+  graph <- graph %>% 
+    mutate(louvain_group = group_louvain())
+  
+  target_group <- graph %>% 
+    as_tibble() %>% 
+    filter(name == CONTIG_OF_INTEREST) %>%
+    # filter(name == "Hjor_1") %>%
+    pull(louvain_group)
+  
+  subgraph <- graph %>%
+    filter(louvain_group == target_group)
+  
+  small_node_df <- data.table(id = names(V(subgraph)),
+                              contig_type = "")
+  small_node_df$contig_type <- contig_df$type[match(small_node_df$id, contig_df$contig_id)]
+  
+  # then subset the big df, so we retain only edges of nodes that are part of the 
+  # group
+  small_edge_df <- big_connection_df %>%
+    filter(from %in% small_node_df$id & to %in% small_node_df$id)
+  
+  g <- graph_from_data_frame(small_edge_df, directed = F, small_node_df)
+  V(g)$node_type <- contig_df$type[match(V(g)$name, contig_df$contig_id)]
+  V(g)$tax_info <- contig_df$tax_info[match(V(g)$name, contig_df$contig_id)]
+  
+  E(g)$edge_type <- as.factor(E(g)$type)
+  
+  
+  
+  g <- as_tbl_graph(g)
+  
+  layout <- create_layout(g, layout = "fr")
+  ggiraph_plot <- ggraph(layout) +
+    geom_edge_link(aes(color = type), show.legend = F) +
+    geom_point_interactive(size = 3,
+                           alpha = 0.8,
+                           aes(x = x, 
+                               y = y, 
+                               color = node_type,
+                               data_id = name,
+                               tooltip = paste("Node ID:", name,
+                                               "\nType:", node_type,
+                                               "\nTaxonomy:", tax_info))) +
+    scale_color_manual(values = c(
+      vph = "goldenrod1",
+      lc = "seagreen",
+      plv = "hotpink",
+      gv = "steelblue"
+    )) +
+    facet_edges(~edge_type) +
+    theme_classic() +
+    theme(legend.position = "bottom") +
+    theme(
+      axis.text.x = element_blank(),   # Remove x-axis labels
+      axis.text.y = element_blank(),   # Remove y-axis labels
+      axis.title.x = element_blank(),  # Remove x-axis title
+      axis.title.y = element_blank(),  # Remove y-axis title
+      axis.ticks = element_blank(),    # Remove axis tick marks
+      axis.line = element_blank()      # Remove axis lines
+    )
+  
+  interactive_plot <- girafe(ggobj = ggiraph_plot)
+  interactive_plot
+}
 
-target_group <- graph %>% 
-  as_tibble() %>% 
-  filter(name == "Aved_tig00303955-10-54120_vph") %>%
-  # filter(name == "Hjor_1") %>%
-  pull(louvain_group)
-
-subgraph <- graph %>%
-  filter(louvain_group == target_group)
-
-small_node_df <- data.table(id = names(V(subgraph)),
-                            contig_type = "")
-small_node_df$contig_type <- contig_df$type[match(small_node_df$id, contig_df$contig_id)]
-
-# then subset the big df, so we retain only edges of nodes that are part of the 
-# group
-small_edge_df <- big_connection_df %>%
-  filter(from %in% small_node_df$id & to %in% small_node_df$id)
-
-g <- graph_from_data_frame(small_edge_df, directed = F, small_node_df)
-V(g)$node_type <- contig_df$type[match(V(g)$name, contig_df$contig_id)]
-V(g)$tax_info <- contig_df$tax_info[match(V(g)$name, contig_df$contig_id)]
-
-E(g)$edge_type <- as.factor(E(g)$type)
+# in case you want to save
+htmltools::save_html(interactive_plot, file = paste0("final/", CONTIG_OF_INTEREST, "_interactive.html"))
 
 
 
-g <- as_tbl_graph(g)
 
-layout <- create_layout(g, layout = "fr")
-ggiraph_plot <- ggraph(layout) +
-  geom_edge_link(aes(color = type), show.legend = F) +
-  geom_point_interactive(size = 3,
-                         alpha = 0.8,
-                         aes(x = x, 
-                             y = y, 
-                             color = node_type,
-                             data_id = name,
-                             tooltip = paste("Node ID:", name,
-                                             "\nType:", node_type,
-                                             "\nTaxonomy:", tax_info))) +
-  scale_color_manual(values = c(
-    vph = "goldenrod1",
-    lc = "seagreen",
-    plv = "hotpink",
-    gv = "steelblue"
-  )) +
-  facet_edges(~edge_type) +
-  theme_classic() +
-  theme(legend.position = "bottom") +
-  theme(
-    axis.text.x = element_blank(),   # Remove x-axis labels
-    axis.text.y = element_blank(),   # Remove y-axis labels
-    axis.title.x = element_blank(),  # Remove x-axis title
-    axis.title.y = element_blank(),  # Remove y-axis title
-    axis.ticks = element_blank(),    # Remove axis tick marks
-    axis.line = element_blank()      # Remove axis lines
-  )
-
-interactive_plot <- girafe(ggobj = ggiraph_plot)
-htmltools::save_html(interactive_plot, "final/subcluster_1_interactive.html")
-interactive_plot
 
 # another idea: GV-LC partners --------------------------------------------
 
@@ -259,6 +271,91 @@ VIRUS_HOST_df$host_tax_perc <- as.character(lc_tax_info_short$pct_reads_assigned
 VIRUS_HOST_df$host_tax_perc <- str_replace(VIRUS_HOST_df$host_tax_perc, "\\.", ",")
 
 fwrite(VIRUS_HOST_df, "tmp_V_H_pairs.csv")
+
+
+
+# centrality --------------------------------------------------------------
+
+# we need to do this for each layer seperately and then one combined:
+for(layer in c(unique(big_connection_df$type), "all")){
+  print(layer)
+  
+  if(layer == "all"){
+    g <- graph_from_data_frame(big_connection_df)
+  }else{
+    g <- graph_from_data_frame(big_connection_df %>% filter(type == layer))
+  }
+  
+  deg <- degree(g, mode = "all")
+  btw <- betweenness(g, directed = TRUE, normalized = TRUE)
+  
+  deg_df <- enframe(deg, name = "contig_id", value = "degree")
+  btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
+  
+  network_df <- left_join(deg_df, btw_df)
+  network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
+  
+  # set order of entities
+  network_df$contig_type <- factor(network_df$contig_type,
+                                   levels = c("lc", "gv", "plv", "vph"))
+  
+  deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_type)) +
+    geom_boxplot() +
+    geom_signif(
+      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    scale_y_log10() +
+    labs(
+      title = "Degree Distribution",
+      subtitle = paste0("Layer: ", layer), 
+      x = "Contig Type",
+      y = "Degree (log10)"
+    ) +
+    theme_cowplot() +
+    theme(legend.position = "none") +
+    scale_fill_manual(values = c(
+      vph = "goldenrod1",
+      lc = "seagreen",
+      plv = "hotpink",
+      gv = "steelblue"
+    ))
+  deg_plot  
+  
+  
+  
+  bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = contig_type)) +
+    geom_boxplot() +
+    geom_signif(
+      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    scale_y_log10() +
+    labs(
+      title = "Betweeness Distribution",
+      subtitle = paste0("Layer: ", layer),
+      x = "Contig Type",
+      y = "Betweeness (log10)"
+    ) +
+    theme_cowplot() +
+    theme(legend.position = "none") +
+    scale_fill_manual(values = c(
+      vph = "goldenrod1",
+      lc = "seagreen",
+      plv = "hotpink",
+      gv = "steelblue"
+    ))
+  
+  p <- deg_plot + bet_plot
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.png"), width = 7, height = 4)
+}
+
+
+
+
+# PLVs and VPHs -----------------------------------------------------------
+
+plv_df <- big_connection_df %>% 
+  filter(str_detect(from, "vph") | str_detect(to, "vph"))
+
 
 
 # multi_connection_pairs <- big_connection_df %>%

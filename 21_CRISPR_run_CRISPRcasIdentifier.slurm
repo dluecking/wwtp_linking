@@ -23,6 +23,7 @@ echo "Output will be saved to ${OUTPUT_DIR}"
 python "${CRISPRCASID_BIN}" \
     -f "${INPUT_FASTA}" \
     -o "${OUTPUT_FILE}" \
+    -sc partial \
     -st dna 
 
 echo "CRISPRcasIdentifier run complete."
