@@ -1,0 +1,15 @@
+AalE_tig00021708-10-192480_vph.fna
+Aved_tig00056523-10-134420_vph.fna
+Aved_tig00303955-10-54120_vph.fna
+Damh_tig00014446-10-220150_vph.fna
+Damh_tig00018526-10-141480_vph.fna
+Damh_tig00046628-10-92530_vph.fna
+Fred_tig00051270-10-161640_vph.fna
+Fred_tig00089364-10-137080_vph.fna
+Hade_tig00086668-10-71420_vph.fna
+Lyne_tig00028020-10-249450_vph.fna
+Lyne_tig00033829-10-240680_vph.fna
+Lyne_tig00044463-10-176290_vph.fna
+Skiv_tig00138093-10-67990_vph.fna
+Vibo_tig00073545-10-42870_vph.fna
+Viby_tig00043866-10-124870_vph.fna
