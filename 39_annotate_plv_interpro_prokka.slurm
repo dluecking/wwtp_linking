@@ -2,7 +2,7 @@
 #SBATCH --job-name=annotate_plv
 #SBATCH --output=log/annotate_plv_output_%A_%a.out
 #SBATCH --error=log/annotate_plv_error_%A_%a.err
-#SBATCH --array=1-1%50
+#SBATCH --array=2-14%50
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=1:00:00

@@ -126,8 +126,14 @@ big_connection_df <- rbind(
 
 # CONTIG_OF_INTEREST <- "Aved_tig00303955-10-54120_vph" # thats the good one
 CONTIG_OF_INTEREST <- "Vibo_2_3_4"
+SAVE_PLOT <- TRUE
 
-{
+# plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
+# vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
+gvs <- GV_info$shortname
+
+for(contig in gvs){
+  CONTIG_OF_INTEREST <- contig
   # get a list of ids that are part of the specific subcluster
   # this first retains only connections which are of a specific type (e.g. "gene_sharing")
   df <- big_connection_df %>% 
@@ -142,8 +148,12 @@ CONTIG_OF_INTEREST <- "Vibo_2_3_4"
   target_group <- graph %>% 
     as_tibble() %>% 
     filter(name == CONTIG_OF_INTEREST) %>%
-    # filter(name == "Hjor_1") %>%
     pull(louvain_group)
+  
+  # if this is not in any subcluster, we can skip it
+  if(identical(target_group, integer(0))){
+    next
+  }
   
   subgraph <- graph %>%
     filter(louvain_group == target_group)
@@ -198,19 +208,16 @@ CONTIG_OF_INTEREST <- "Vibo_2_3_4"
     )
   
   interactive_plot <- girafe(ggobj = ggiraph_plot)
-  interactive_plot
+  
+  if(SAVE_PLOT){
+    # in case you want to save
+    htmltools::save_html(interactive_plot, file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, "_interactive.html"))
+  }
 }
-
-# in case you want to save
-htmltools::save_html(interactive_plot, file = paste0("final/", CONTIG_OF_INTEREST, "_interactive.html"))
-
-
 
 
 
 # another idea: GV-LC partners --------------------------------------------
-
-
 
 VIRUS_HOST_df <- data.table(gv_id = as.character(),
                             host_id = as.character(),

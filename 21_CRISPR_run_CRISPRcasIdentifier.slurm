@@ -4,9 +4,9 @@
 #SBATCH --error=log/crisprcasid_job_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8      # Request more CPUs for potentially faster processing
+#SBATCH --cpus-per-task=4      # Request more CPUs for potentially faster processing
 #SBATCH --mem=16G              # Request more memory, especially for larger input files
-#SBATCH --time=04:00:00        # Set a reasonable time limit (e.g., 4 hours)
+#SBATCH --time=16:00:00        # Set a reasonable time limit (e.g., 4 hours)
 
 module load conda
 conda activate crispr-env 
