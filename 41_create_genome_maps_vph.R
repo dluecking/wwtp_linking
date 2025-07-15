@@ -1,5 +1,5 @@
 # Author: dlu @ veelab
-# Version: 2025-07-11
+# Version: 2025-07-15
 
 # Packages
 library(dplyr)
@@ -100,8 +100,6 @@ parse_prodigal_proteins_to_dataframe <- function(prodigal_file){
   return(tmp_df)
 }
 
-
-
 # load data ---------------------------------------------------------------
 
 hmm_out <- data.table()
@@ -111,31 +109,22 @@ for(file in list.files(path = "intermediate/hmm_out", pattern = "\\.tbl")){
   tmp_dt$sample <- str_remove(file, "\\_.*$")
   
   hmm_out <- rbind(hmm_out, tmp_dt)
-  
-  
 }
 rm(tmp_dt)
 
 hmm_out <- hmm_out %>% 
   filter(!is.na(query)) %>% 
-  filter(score >= 50)
+  filter(score >= 50) %>% 
+  filter(query != "ALL_PLV")
 
 
 hmm_out$contig <- str_remove(hmm_out$target, "\\_\\d*$")
 hmm_out$query_type <- str_remove(hmm_out$query, "\\_\\d*$")
+hmm_out$gene_id <- paste0(hmm_out$sample, "_", hmm_out$target)
+hmm_out$gene_id <- str_replace(hmm_out$gene_id, "_(?!.*_)", "_vph_")
 
-
-
-# first PLV ---------------------------------------------------------------
-
-sheet_url <- "https://docs.google.com/spreadsheets/d/113hSsqFV73bfdHTs5WoFFQU1DvnAcV5kPYmtanhROsY/edit?usp=sharing"
-plv_info <- read_sheet(sheet_url, sheet = "PLVs") 
-plv_hmm <- hmm_out %>% filter(query == "ALL_PLV")
-plv_hmm$gene_id <- paste0(plv_hmm$sample, "_", plv_hmm$target)
-plv_hmm$gene_id <- str_replace(plv_hmm$gene_id, "_(?!.*_)", "_plv_")
-
-
-prodigal_files <- list.files("intermediate/proteins/plv", full.names = TRUE)
+# load prodigal orfs
+prodigal_files <- list.files("intermediate/proteins/vph", full.names = TRUE)
 
 gene_df <- data.table()
 
@@ -145,15 +134,13 @@ for(file in prodigal_files){
 }
 rm(tmp_df)
 
-
 # combine gene info with the hmm_out
-gene_df$annotation <- plv_hmm$query[match(gene_df$gene, plv_hmm$gene_id)]
-gene_df$annotation[gene_df$annotation == "ALL_PLV"] <- "MCP"
+gene_df$annotation <- hmm_out$query[match(gene_df$gene, hmm_out$gene_id)]
 gene_df$annotation[is.na(gene_df$annotation)] <- "hypothetical"
 
 
 # add introscan annotation
-interpro_files <- list.files("intermediate/annotations/interpro/plv", pattern = ".tsv$", full.names = TRUE)
+interpro_files <- list.files("intermediate/annotations/interpro/vph", pattern = ".tsv$", full.names = TRUE)
 interpro_out <- rbindlist(lapply(interpro_files, fread))
 
 # filter out unnecessary hits
@@ -169,10 +156,10 @@ interpro_out <- interpro_out %>%
   group_by(V1) %>% 
   slice_min(V9, n = 1)
 
-# add interpro annotation but only if not MCP
+# add interpro annotation but only if not already known
 for(i in 1:nrow(gene_df)){
-  # if not empty interpro annotation AND not MCP annotation already present
-  if(length(interpro_out$V6[interpro_out$V1 == gene_df$gene[i]]) > 0 & gene_df$annotation[i] != "MCP"){
+  # if not empty interpro annotation AND the currecnt annotation is "hypothetical"
+  if(length(interpro_out$V6[interpro_out$V1 == gene_df$gene[i]]) > 0 & gene_df$annotation[i] == "hypothetical"){
     gene_df$annotation[i] <- interpro_out$V6[interpro_out$V1 == gene_df$gene[i]]
   }
 }
@@ -180,32 +167,32 @@ for(i in 1:nrow(gene_df)){
 # simplify annotations
 gene_df <- gene_df %>% 
   mutate(annotation_short = case_when(
-    annotation == "hypothetical" ~ "hypothetical",
-    annotation == "MCP" ~ "MCP",
     annotation == "DNA/RNA polymerases" ~ "DNA Pol",
-    annotation == "DNA polymerase type B, organellar and viral" ~ "DNA Pol",
     annotation == "Palm domain of DNA polymerase" ~ "DNA Pol",
     annotation == "His-Me finger endonucleases" ~ "His-Me ENase",
-    annotation == "GIY-YIG endonuclease" ~ "GIY-YIG ENase",
+    annotation == "Major capsid protein V20 C-terminal domain" ~ "MCP C-terminal domain",
     annotation == "P-loop containing nucleoside triphosphate hydrolases" ~ "P-loop NTPase",
-    annotation == "Poxvirus A32 protein" ~ "A32",
-    annotation == "Ribonuclease H-like" ~ "RNaseH-like sf")
+    annotation == "S-adenosyl-L-methionine-dependent methyltransferases" ~ "SAM-dependent_MTases_sf",
+    annotation == "Ribonuclease H-like" ~ "RNaseH-like sf",
+    annotation == "Sputnik minor capsid protein V18/19" ~ "mCP V18/19",
+    annotation == "Sputnik virophage major capsid protein 1st domain" ~ "MCP 1st domain",
+    TRUE ~ annotation
+    )
   )
 
 
-# visualize PLV -----------------------------------------------------------
-
-# Create a new data frame for the reversed coordinates
+# adjust orientation based on Penton
 gene_df_reversed <- gene_df
 
 for(seq in unique(gene_df_reversed$molecule)){
-  MCP_STRAND <- gene_df_reversed %>% 
+  PENTON_STRAND <- gene_df_reversed %>% 
     filter(molecule == seq) %>% 
-    filter(annotation_short == "MCP") %>% 
+    filter(annotation_short == "Penton_1") %>% 
+    sample_n(1) %>% 
     pull(strand)
   
   # only if MCP is reverse
-  if(MCP_STRAND == "reverse"){
+  if(PENTON_STRAND == "reverse"){
     # total length of current molecule
     seq_length <- max(gene_df_reversed$end[gene_df_reversed$molecule == seq])
     
@@ -234,32 +221,42 @@ for(seq in unique(gene_df_reversed$molecule)){
   }
 }
 
+
+# visualization of vphs ---------------------------------------------------
+# all annotations which are only in a single vph get "other"
+
+gene_df_reversed <- gene_df_reversed %>%
+  group_by(annotation_short) %>%
+  mutate(count = n()) %>% # Calculate the count for each annotation_short
+  ungroup() %>%
+  mutate(annotation_short = ifelse(count < 2, "other", annotation_short)) %>%
+  select(-count)
+
 # order needs to be set
 # this is sorted by subclusters on top (1, 2, 3, then singles)
 desired_molecule_order <- c(
-  "AalW_tig00083928-10-131450_plv (rev)",
-  "Rand_tig00054083-10-84480_plv (rev)",
-  "Vibo_tig00019442-10-136670_plv (rev)",
-  "Bjer_tig00027726-10-154320_plv (rev)",
-  "Mari_tig00039850-10-191400_plv (rev)",
-  "Ribe_tig00030249-10-170680_plv",
-  "Aved_tig00048883-10-193450_plv (rev)",
-  "Aved_tig00084897-10-150130_plv (rev)",
-  "Ejby_tig00023995-10-186920_plv (rev)",
-  "Lyne_tig00046032-10-146580_plv (rev)",
-  "Lyne_tig00060056-10-166770_plv",
-  "Rand_tig00055912-10-108660_plv",
-  "Rand_tig00813462-10-110980_plv",
-  "Vibo_tig00024931-10-107240_plv"
+  "Aved_tig00303955-10-54120_vph", # cluster 1
+  "Damh_tig00014446-10-220150_vph", # cluster 2
+  "Damh_tig00046628-10-92530_vph (rev)",
+  "Hade_tig00086668-10-71420_vph (rev)",
+  "Lyne_tig00033829-10-240680_vph (rev)",
+  "Lyne_tig00044463-10-176290_vph",
+  "Damh_tig00018526-10-141480_vph", # cluster 3
+  "Fred_tig00089364-10-137080_vph (rev)",
+  "AalE_tig00021708-10-192480_vph",
+  "Aved_tig00056523-10-134420_vph",
+  "Fred_tig00051270-10-161640_vph (rev)",
+  "Lyne_tig00028020-10-249450_vph",
+  "Skiv_tig00138093-10-67990_vph (rev)",
+  "Vibo_tig00073545-10-42870_vph",
+  "Viby_tig00043866-10-124870_vph (rev)"
 )
 gene_df_reversed$molecule <- factor(gene_df_reversed$molecule, levels = desired_molecule_order)
 
-
-# create dummies for nice alignment
 dummies <- make_alignment_dummies(
   gene_df_reversed %>% select(molecule, gene, start, end, annotation_short),
   aes(xmin = start, xmax = end, y = molecule, id = annotation_short),
-  on = "MCP"
+  on = "Penton_1"
 )
 
 ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = annotation_short)) +
@@ -267,14 +264,36 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
   geom_blank(data = dummies) +
   facet_wrap(~ molecule, scales = "free", ncol = 1) +
   scale_fill_manual(values = c(
-    MCP = "hotpink",            # Stays hotpink - distinct and vibrant
-    `DNA Pol` = "#014263",      # Deep, bold red - excellent for highlighted/important
-    A32 = "#00ffba",            # Soft, light blue - subtle, not highlighted
-    `GIY-YIG ENase` = "#ffa05f", # Lighter, softer purple
-    `His-Me ENase` = "#fac55b",  # Deeper, richer purple - clearly related, but distinct
-    `P-loop NTPase` = "#2dd2c0", # Warm, rich burnt orange
-    `RNaseH-like sf` = "#fc8484", # Deeper, more brownish-orange - clearly related, but distinct
-    hypothetical = "white"    # Very light grey, almost white - for background/hypothetical
+    # Top 6 most significant genes
+    MCP_1 = "#FDBF6F",                   
+    `DNA Pol` = "#014263",              
+    ATPase_1 = "#00ffba",                
+    Penton_1 = "gold",                
+    `Integrase core domain` = "#fc8484", 
+    PRO_1 = "#8A2BE2",
+    
+    # Other functional genes in shades of gray
+    `His-Me ENase` = "#D3D3D3",
+    `RNaseH-like sf` = "#D3D3D3",
+    `P-loop NTPase` = "#D3D3D3",
+    `SET domain` = "#D3D3D3",
+    `SGNH hydrolase` = "#D3D3D3",
+    `alpha/beta-Hydrolases` = "#D3D3D3",
+    `Concanavalin A-like lectins/glucanases` = "#D3D3D3",
+    other = "#D3D3D3",                   # Light gray for miscellaneous
+    
+    # Hypothetical genes
+    hypothetical = "white"               # White, with a black border often added in geom_*
+  ),
+  breaks = c(
+    "MCP_1",
+    "DNA Pol",
+    "ATPase_1",
+    "Penton_1",
+    "Integrase core domain",
+    "PRO_1",
+    "other",
+    "hypothetical"
   )) +
   theme_genes() +
   labs(y = "") +
@@ -289,5 +308,6 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
     legend.position = "bottom"
   )
 
-ggsave(plot = last_plot(), file = "final/plv_genome_map.png", height = 4.5, width = 8)
+ggsave(plot = last_plot(), file = "final/vph_genome_map.png", height = 4.5, width = 8)
+
 
