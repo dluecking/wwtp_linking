@@ -10,7 +10,7 @@
 
 # --- Configuration ---
 # Path to your diamond_assign_classficiation.sh script
-DIAMOND_TAX_SCRIPT="/lisc/user/luecking/scripts/diamond_assign_classfication.sh"
+DIAMOND_TAX_SCRIPT="/lisc/home/user/luecking/scripts/diamond_assign_classfication.sh"
 
 # List of input FASTA files (each line should be a full path to a *_filtered.fna file)
 INPUT_FILE_LIST="helperfiles/lc_filtered_files.txt"

@@ -12,7 +12,7 @@ module load conda
 conda activate crispr-env 
 
 # --- Define paths ---
-CRISPRCASID_BIN="/lisc/user/luecking/bin/CRISPRcasIdentifier-1.1.0/CRISPRcasIdentifier.py"
+CRISPRCASID_BIN="/lisc/home/user/luecking/bin/CRISPRcasIdentifier-1.1.0/CRISPRcasIdentifier.py"
 INPUT_FASTA="intermediate/CRISPR/candidate_contigs.fna"
 OUTPUT_FILE="intermediate/CRISPR/crisprcasid_output.txt"
 
