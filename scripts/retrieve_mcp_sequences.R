@@ -59,7 +59,7 @@ for (req_arg in required_args) {
 
 
 # Set DEBUG to TRUE to use hardcoded paths for development/testing
-DEBUG <- TRUE # Set to TRUE to enable debug mode and overwrite arguments
+DEBUG <- FALSE # Set to TRUE to enable debug mode and overwrite arguments
 
 if (DEBUG) {
   # set working directory
@@ -156,13 +156,34 @@ all_public_MCPs_cleaned_1 <- all_public_MCPs[!sapply(all_public_MCPs, is.null)]
 vph_proteins <- unlist(lapply(list.files(path = args$my_vph_protein_dir, pattern = "\\.faa$", full.names = TRUE), read.fasta), recursive = F)
 plv_proteins <- unlist(lapply(list.files(path = args$my_plv_protein_dir, pattern = "\\.faa$", full.names = TRUE), read.fasta), recursive = F)
 
-# THIS IS WHAT YOU NEED TO FIX:
-# the names in vph_proteins contains the sample + the _vph_ tag, so we need to clean this first and then filter
-# same goes for plv
-vph_MCPs <- vph_proteins[unique(hmm_out$target)]
+# find VPH MCPs
+vph_MCPs <- list()
+
+for (prot_name in names(vph_proteins)) {
+  current_shorted_name <- str_remove(prot_name, "_vph")
+  current_shorted_name <- str_remove(current_shorted_name, "^[A-Za-z]*_")
+  
+  if (current_shorted_name %in% hmm_out$target) {
+    vph_MCPs[[prot_name]] <- vph_proteins[[prot_name]]
+  }
+}
+
+# find PLV MCPs
+plv_MCPs <- list()
+for (prot_name in names(plv_proteins)) {
+  current_shorted_name <- str_remove(prot_name, "_plv")
+  current_shorted_name <- str_remove(current_shorted_name, "^[A-Za-z]*_")
+  
+  if (current_shorted_name %in% hmm_out$target) {
+    plv_MCPs[[prot_name]] <- plv_proteins[[prot_name]]
+  }
+}
 
 
 
+# write to file -----------------------------------------------------------
 
-
-
+all_MCPs <- c(plv_MCPs, vph_MCPs, all_public_MCPs_cleaned_1)
+write.fasta(sequences = all_MCPs,
+            names = getName(all_MCPs),
+            file.out = args$output)

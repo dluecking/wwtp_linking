@@ -124,7 +124,7 @@ big_connection_df <- rbind(
 
 # visualize a subcluster surrounding a specific node ----------------------
 
-# CONTIG_OF_INTEREST <- "Aved_tig00303955-10-54120_vph" # thats the good one
+# CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
 CONTIG_OF_INTEREST <- "Vibo_2_3_4"
 SAVE_PLOT <- TRUE
 

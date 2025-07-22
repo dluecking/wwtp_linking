@@ -260,7 +260,7 @@ dummies <- make_alignment_dummies(
 )
 
 ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = annotation_short)) +
-  geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) +
+  geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm"), size = 0.5) +
   geom_blank(data = dummies) +
   facet_wrap(~ molecule, scales = "free", ncol = 1) +
   scale_fill_manual(values = c(
@@ -305,7 +305,8 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
     panel.grid.minor.x = element_blank(),  # Removes minor vertical grid lines
     axis.line.x = element_blank(),
     legend.title = element_blank(),
-    legend.position = "bottom"
+    legend.position = "bottom",
+    axis.text.y = element_text(face = "bold")
   )
 
 ggsave(plot = last_plot(), file = "final/vph_genome_map.png", height = 4.5, width = 8)
