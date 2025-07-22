@@ -1,0 +1,202 @@
+# Author: dlu @ veelab
+# Version: 2025-07-22
+
+# Packages
+library(dplyr)
+library(seqinr)
+library(ggplot2)
+library(data.table)
+library(stringr)
+library(ggtree)
+library(ggtreeExtra)
+library(googlesheets4)
+library(ggnewscale)
+
+# set working directory
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
+
+
+# load auxiliary data -----------------------------------------------------
+
+GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474", 
+                      sheet = "Final GVs overview") %>% 
+  filter(!is.na(sample))
+GV_info$tip_label <- str_replace_all(GV_info$shortname, pattern = "\\_", replacement = "\\.")
+
+
+nuphylo_GV_data <- fread("../../misc/test_aster/NuPhylo_itol_colors.csv")
+
+
+# add info to tree_data ---------------------------------------------------
+
+# load tree first
+aster_tree <- read.tree("../../misc/test_aster/combined_astra_tree.tre")
+
+# create tree_data
+tree_data <- data.table(tip_label = unique(c(GV_info$tip_label, aster_tree$tip.label)))
+
+
+# make them bold if our study
+tree_data <- tree_data %>% 
+  mutate(source = case_when(
+    tip_label %in% GV_info$tip_label ~ "this study",
+    TRUE ~ "reference"
+  )) %>% 
+  mutate(label_bold = case_when(
+    tip_label %in% GV_info$tip_label ~ 2,
+    TRUE ~ 1
+  ))
+
+
+
+# but now lets add family information so we can color!
+tree_data <- tree_data %>%
+  left_join(GV_info %>% select(tip_label, personal_assessment_order),
+            by = "tip_label") %>%
+  left_join(nuphylo_GV_data %>% select(Genome, Order),
+            by = c("tip_label" = "Genome")) %>%
+  mutate(
+    tax_order = case_when(
+      source == "this study" ~ personal_assessment_order,
+      source == "reference" ~ Order
+    )
+  ) %>% 
+  select(-Order, -personal_assessment_order)
+
+# add info of our genomes
+# circularity
+tree_data$circularity <- GV_info$circular[match(tree_data$tip_label, GV_info$tip_label)]
+
+# completeness estimate
+tree_data$completeness <- GV_info$completeness[match(tree_data$tip_label, GV_info$tip_label)]
+
+
+# short_id needs to be added: you are "" unless you are in my dataset, OR I manually want to higlight with a specific short_id
+tree_data <- tree_data %>% 
+  mutate(
+    short_id = case_when(
+      tip_label %in% GV_info$tip_label ~ tip_label,
+      tip_label == "Poxviridae_AF198100_Fowlpox_virus" ~ "Poxvirus Fowlpox (AF198100)",
+      tip_label == "Phycodnaviridae_KF481685_Emiliania_huxleyi_virus_18" ~ "Emiliania_huxleyi_virus (KF481685)",
+      tip_label == "Asfarviridae_KU702951_Faustovirus_strain_D6" ~ "Faustovirus D6 (KU702951)",
+      tip_label == "Pithoviridae_MK072498_Solumvirus_sp_clone_Solumvirus_1" ~ "Pithovirus Solumnvirus 1(MK072498)",
+      tip_label == "Iridoviridae_JQ724856_European_sheatfish_virus" ~ "Irodivirus Eur. Sheatfish V. (JQ724856)",
+      tip_label == "Ascoviridae_KJ755191_Heliothis_virescens_ascovirus_3f_isolate_LD135790" ~ "Ascovirus Helithis virescens 3f",
+      tip_label == "Marseilleviridae_HQ113105_Lausannevirus_isolate_7715" ~ "Lausannevirus 7715 (HQ113105)",
+      tip_label == "Mimiviridae_ChoanoV1" ~ "Mimiviridae ChoanoV1",
+      tip_label == "Mimiviridae_MF405918_Tupanvirus_deep_ocean" ~ "Tupanvirus deep ocean (MF405918)",
+      tip_label == "Mimiviridae_KY684085_Indivirus_ILV1_Indivirus_1" ~ "Indivirus ILV1 (KY684085)",
+      TRUE ~ ""
+    )
+  )
+
+# which labels to show in the tree?
+tree_data <- tree_data %>% 
+  mutate(
+    show_in_tree = case_when(
+      short_id != "" ~ "TRUE",
+      TRUE ~ "FALSE"
+    )
+  )
+
+
+# which which line type do we want to have
+tree_data <- tree_data %>% 
+  mutate(
+    line_type = ifelse(short_id == "", "dotted", "aa")
+  )
+# which which line type do we want to have
+tree_data <- tree_data %>% 
+  mutate(
+    numeric_linesize = ifelse(short_id == "", "0", "0.05")
+  )
+
+
+
+
+# vis tree ----------------------------------------------------------------
+
+# first re-root to poxvirius (we dont have pokkes)
+aster_tree <- root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
+
+tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) %<+% tree_data
+tree + geom_tiplab(mapping = aes(label = short_id, 
+                                 colour = show_in_tree, 
+                                 fontface = label_bold),
+                   linesize = 0.25,
+                   align = TRUE, 
+                   size = 1.6,
+                   hjust = -0.05,
+                   offset = 1.5) +
+  # scale_linetype_manual(values = c("blank" = "dotted", "aa" = "aa")) +
+  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "black"), guide = "none") +
+  theme_tree() +
+  geom_fruit(geom = geom_tile,
+             mapping = aes(y = tip_label, fill = tax_order),
+             color = "black", offset = 0.1, size = 0.3) +
+  scale_fill_manual(guide = guide_legend(title = "Order", 
+                                         keywidth=0.5,
+                                         keyheight=0.5, ncol = 2),
+                    values = c(
+                      "Yaravirales"     = "#1b9e77",  # teal
+                      "Asfuvirales"     = "#d95f02",  # orange
+                      "Pimascovirales"  = "#7570b3",  # purple
+                      "Pandoravirales"  = "#e7298a",  # magenta
+                      "Imitervirales"   = "#66a61e",  # green
+                      "Chitovirales"    = "#e6ab02",  # mustard
+                      "Proculvirales"   = "#a6761d",  # brown
+                      "Algavirales"     = "#1f78b4",  # blue
+                      "unknown"         = "grey80"    # light grey
+                    ),
+                    na.translate = FALSE) +
+  new_scale_fill() +
+  geom_fruit(geom = geom_tile,
+             mapping = aes(y = tip_label, fill = completeness),
+             color = "black", offset = 0.03, size = 0.3) +
+  scale_fill_manual(
+    values = c("complete" = "steelblue", 
+               "likely complete" = "lightblue", 
+               "likely incomplete" = "#FFF4B5", 
+               "incomplete" = "#FFD7C4"),  
+    # na.translate = FALSE,  # suppress legend item and display for NA
+    na.value = "white",
+    guide = guide_legend(title = "Completeness", 
+                         keywidth=0.5,
+                         keyheight=0.5)
+  ) +
+  # Point showing circularity
+  geom_fruit(
+    geom = geom_point,
+    mapping = aes(y = tip_label, shape = circularity),
+    fill = "black",
+    alpha = 0.8,
+    size = 1.2, offset = 0.05
+  ) +
+  scale_shape_manual(
+    values = c("Y" = 19, "N" = 17),  # 21 = circle, 22 = square
+    na.translate = FALSE,  # suppress legend item and display for NA,
+    guide = "none"
+  ) +
+  theme(legend.background=element_rect(fill=NA),
+        legend.text=element_text(size=8),
+        legend.position=c(0.7, 0.34),
+        plot.margin = unit(c(1,2,0.5,0.8), "cm")) +
+  xlim_tree(c(NA, 5))
+
+
+
+ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.pdf", height = 8, width = 8)
+ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.svg", height = 6, width = 10)
+
+
+
+
+
+
+
+
+
+
+
+
