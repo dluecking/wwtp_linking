@@ -136,16 +136,32 @@ for(i in 1:nrow(tree_data)){
   }
 }
 
-# comment later
-# tree$label <- tree_data$short_id[match(tree$tip.label, tree_data$tip_label)]
-# tree$origin <- tree_data$origin[match(tree$tip.label, tree_data$tip_label)]
-
+# make our lables bold
 tree_data <- tree_data %>%
   mutate(label_bold = case_when(
     origin == "this study" ~ 2,
     TRUE ~ 1
   ))
-# 
+
+# highlight the lavidavirales group to the left and the mividavirales cluster on the right
+tree_data <- tree_data %>%
+  mutate(highlight = case_when(
+    # lavidavirales
+    tip_label == "Lyne_tig00028020-10-249450_vph_26_27_28_concat" ~ "lavida",
+    tip_label == "Damh_tig00046628-10-92530_vph_8" ~ "lavida",
+    tip_label == "Lyne_tig00044463-10-176290_vph_16_15_concat" ~ "lavida",
+    tip_label == "Lyne_tig00033829-10-240680_vph_12" ~ "lavida",
+    tip_label == "Damh_tig00014446-10-220150_vph_23" ~ "lavida",
+    tip_label == "Hade_tig00086668-10-71420_vph_7" ~ "lavida",
+    # mividavirales
+    tip_label == "Fred_tig00089364-10-137080_vph_6" ~ "mivida",
+    tip_label == "Damh_tig00018526-10-141480_vph_14" ~ "mivida",
+    tip_label == "Aved_tig00056523-10-134420_vph_14" ~ "mivida",
+    tip_label == "MG807318.2_12" ~ "mivida", # zamilon
+    tip_label == "JN603370.1_20" ~ "mivida", # sputnik
+    
+    TRUE ~ NA
+  ))
 
 
 
@@ -169,7 +185,7 @@ a +
       `IMG/VR3` = "grey90",
       NCBI = "grey60",
       `Hackl 2021` = "grey30"),
-    guide = guide_legend(title = "Origin", 
+    guide = guide_legend(title = "Source", 
                          keywidth=0.5,
                          keyheight=0.5))  +
   

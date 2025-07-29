@@ -195,7 +195,20 @@ for(contig in gvs){
       plv = "hotpink",
       gv = "steelblue"
     )) +
-    facet_edges(~edge_type) +
+    facet_edges(~edge_type, ncol = 3, labeller = labeller(
+      edge_type = c(
+        "gene_sharing" = "Gene Sharing",
+        "crispr" = "CRISPR",
+        "non_crispr" = "MIMIVIRE",
+        "integration_boundary" = "Integration (boundary)",
+        "integration_middle" = "Integration (middle)",
+        "occurance_ill_positive" = "Ill. positive", 
+        "occurance_ont_positive" = "ONT positive", 
+        "occurance_ill_negative" = "Ill. negative", 
+        "occurance_ont_negative" = "ONT negative"
+      )
+    )
+    ) +
     theme_classic() +
     theme(legend.position = "bottom") +
     theme(
@@ -211,12 +224,24 @@ for(contig in gvs){
   
   if(SAVE_PLOT){
     # in case you want to save
+    # for ggsave this is a bit more complicated, since we need to adjust the width and height:
+    FACETS <- length(unique(small_edge_df$type))
+    HEIGHT_FACTOR <- ceiling(FACETS / 3)
+    
+    ggsave(ggiraph_plot + theme(legend.position = "none"), 
+           file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, ".svg"), 
+           width = 4.5, height = 1.8*HEIGHT_FACTOR)
     htmltools::save_html(interactive_plot, file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, "_interactive.html"))
   }
 }
 
 
-
+# Suppose your facet variable has values: "A", "B", "C"
+ggplot(data, aes(x, y)) +
+  geom_point() +
+  facet_wrap(~ group, labeller = labeller(
+    group
+  ))
 # another idea: GV-LC partners --------------------------------------------
 
 VIRUS_HOST_df <- data.table(gv_id = as.character(),
