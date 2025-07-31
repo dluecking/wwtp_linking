@@ -22,19 +22,21 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474", 
                       sheet = "Final GVs overview") %>% 
   filter(!is.na(sample))
-GV_info$tip_label <- str_replace_all(GV_info$shortname, pattern = "\\_", replacement = "\\.")
+# we needed this fix, but fixed in "45_GV-tree_rename_ncldv_output_proteins.R"
+# GV_info$tip_label <- str_replace_all(GV_info$shortname, pattern = "\\_", replacement = "\\.")
+GV_info$tip_label <- GV_info$shortname
 
 
-nuphylo_GV_data <- fread("../../misc/test_aster/NuPhylo_itol_colors.csv")
+nuphylo_GV_data <- fread("helperfiles/NuPhylo_itol_colors.csv")
 
 
 # add info to tree_data ---------------------------------------------------
 
 # load tree first
-aster_tree <- read.tree("../../misc/test_aster/combined_astra_tree.tre")
+aster_tree <- read.tree("intermediate/GV_tree/combined_nuphylo_astral.tre")
 
 # create tree_data
-tree_data <- data.table(tip_label = unique(c(GV_info$tip_label, aster_tree$tip.label)))
+tree_data <- data.table(tip_label = unique(c(GV_info$tip_label, aster_tree$tip.label))) 
 
 
 # make them bold if our study
@@ -64,6 +66,9 @@ tree_data <- tree_data %>%
   ) %>% 
   select(-Order, -personal_assessment_order)
 
+# add the yaravirales one
+tree_data$tax_order[tree_data$tip_label == "lcl|MT293574.1_prot_QKE44413.1"] <- "Yaravirales"
+
 # add info of our genomes
 # circularity
 tree_data$circularity <- GV_info$circular[match(tree_data$tip_label, GV_info$tip_label)]
@@ -87,6 +92,7 @@ tree_data <- tree_data %>%
       tip_label == "Mimiviridae_ChoanoV1" ~ "Mimiviridae ChoanoV1",
       tip_label == "Mimiviridae_MF405918_Tupanvirus_deep_ocean" ~ "Tupanvirus deep ocean (MF405918)",
       tip_label == "Mimiviridae_KY684085_Indivirus_ILV1_Indivirus_1" ~ "Indivirus ILV1 (KY684085)",
+      tip_label == "lcl|MT293574.1_prot_QKE44413.1" ~ "Yaravirus brasil. (MT293574.1)",
       TRUE ~ ""
     )
   )
@@ -118,17 +124,18 @@ tree_data <- tree_data %>%
 # vis tree ----------------------------------------------------------------
 
 # first re-root to poxvirius (we dont have pokkes)
-aster_tree <- root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
+aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
 
 tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) %<+% tree_data
-tree + geom_tiplab(mapping = aes(label = short_id, 
-                                 colour = show_in_tree, 
-                                 fontface = label_bold),
-                   linesize = 0.25,
-                   align = TRUE, 
-                   size = 1.6,
-                   hjust = -0.05,
-                   offset = 1.5) +
+tree + 
+  geom_tiplab(mapping = aes(label = short_id, 
+                            colour = show_in_tree, 
+                            fontface = label_bold),
+              linesize = 0.25,
+              align = TRUE, 
+              size = 1.6,
+              hjust = -0.05,
+              offset = 1.5) +
   # scale_linetype_manual(values = c("blank" = "dotted", "aa" = "aa")) +
   scale_color_manual(values = c("TRUE" = "black", "FALSE" = "black"), guide = "none") +
   theme_tree() +
@@ -159,7 +166,7 @@ tree + geom_tiplab(mapping = aes(label = short_id,
                "likely complete" = "lightblue", 
                "likely incomplete" = "#FFF4B5", 
                "incomplete" = "#FFD7C4"),  
-    # na.translate = FALSE,  # suppress legend item and display for NA
+    na.translate = FALSE,  # suppress legend item and display for NA
     na.value = "white",
     guide = guide_legend(title = "Completeness", 
                          keywidth=0.5,
