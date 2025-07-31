@@ -23,7 +23,6 @@ GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAe
                       sheet = "Final GVs overview") %>% 
   filter(!is.na(sample))
 # we needed this fix, but fixed in "45_GV-tree_rename_ncldv_output_proteins.R"
-# GV_info$tip_label <- str_replace_all(GV_info$shortname, pattern = "\\_", replacement = "\\.")
 GV_info$tip_label <- GV_info$shortname
 
 

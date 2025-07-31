@@ -101,60 +101,82 @@ parse_prodigal_proteins_to_dataframe <- function(prodigal_file){
 }
 
 # load data ---------------------------------------------------------------
+# load hmm out if no local copy of df exists
 
-hmm_out <- data.table()
-
-for(file in list.files(path = "intermediate/hmm_out", pattern = "\\.tbl")){
-  tmp_dt <- parseDomtblout(paste0("intermediate/hmm_out/", file))
-  tmp_dt$sample <- str_remove(file, "\\_.*$")
+if(!file.exists("local_data_storage/vph_hmm_out.tsv")){
+  hmm_out <- data.table()
   
-  hmm_out <- rbind(hmm_out, tmp_dt)
+  for(file in list.files(path = "intermediate/hmm_out", pattern = "\\.tbl")){
+    tmp_dt <- parseDomtblout(paste0("intermediate/hmm_out/", file))
+    tmp_dt$sample <- str_remove(file, "\\_.*$")
+    
+    hmm_out <- rbind(hmm_out, tmp_dt)
+  }
+  rm(tmp_dt)
+  
+  hmm_out <- hmm_out %>% 
+    filter(!is.na(query)) %>% 
+    filter(score >= 50) %>% 
+    filter(query != "ALL_PLV")
+  
+  
+  hmm_out$contig <- str_remove(hmm_out$target, "\\_\\d*$")
+  hmm_out$query_type <- str_remove(hmm_out$query, "\\_\\d*$")
+  hmm_out$gene_id <- paste0(hmm_out$sample, "_", hmm_out$target)
+  hmm_out$gene_id <- str_replace(hmm_out$gene_id, "_(?!.*_)", "_vph_")
+  
+  fwrite(hmm_out, file = "local_data_storage/vph_hmm_out.tsv")
+}else{
+  hmm_out <- fread("local_data_storage/vph_hmm_out.tsv")
 }
-rm(tmp_dt)
 
-hmm_out <- hmm_out %>% 
-  filter(!is.na(query)) %>% 
-  filter(score >= 50) %>% 
-  filter(query != "ALL_PLV")
-
-
-hmm_out$contig <- str_remove(hmm_out$target, "\\_\\d*$")
-hmm_out$query_type <- str_remove(hmm_out$query, "\\_\\d*$")
-hmm_out$gene_id <- paste0(hmm_out$sample, "_", hmm_out$target)
-hmm_out$gene_id <- str_replace(hmm_out$gene_id, "_(?!.*_)", "_vph_")
-
-# load prodigal orfs
-prodigal_files <- list.files("intermediate/proteins/vph", full.names = TRUE)
-
-gene_df <- data.table()
-
-for(file in prodigal_files){
-  tmp_df <- parse_prodigal_proteins_to_dataframe(file)
-  gene_df <- rbind(gene_df, tmp_df)
+# load prodigal orfs if no local copy exists
+if(!file.exists("local_data_storage/vph_gene_df.tsv")){
+  prodigal_files <- list.files("intermediate/proteins/vph", full.names = TRUE)
+  
+  gene_df <- data.table()
+  
+  for(file in prodigal_files){
+    tmp_df <- parse_prodigal_proteins_to_dataframe(file)
+    gene_df <- rbind(gene_df, tmp_df)
+  }
+  rm(tmp_df)
+  
+  # combine gene info with the hmm_out
+  gene_df$annotation <- hmm_out$query[match(gene_df$gene, hmm_out$gene_id)]
+  gene_df$annotation[is.na(gene_df$annotation)] <- "hypothetical"
+  
+  fwrite(gene_df, "local_data_storage/vph_gene_df.tsv")
+  
+}else{
+  gene_df <- fread("local_data_storage/vph_gene_df.tsv")
 }
-rm(tmp_df)
-
-# combine gene info with the hmm_out
-gene_df$annotation <- hmm_out$query[match(gene_df$gene, hmm_out$gene_id)]
-gene_df$annotation[is.na(gene_df$annotation)] <- "hypothetical"
 
 
-# add introscan annotation
-interpro_files <- list.files("intermediate/annotations/interpro/vph", pattern = ".tsv$", full.names = TRUE)
-interpro_out <- rbindlist(lapply(interpro_files, fread))
 
-# filter out unnecessary hits
-interpro_out <- interpro_out %>% 
-  filter(V9 != "-") %>% 
-  mutate(evalue = as.numeric(V9)) %>% 
-  filter(evalue <= 10^-5) %>% 
-  filter(V6 != "-" & V13 != "-") %>% 
-  filter(!str_detect(V6, "unknown function"))
-
-# only get best hit per id based on evalue
-interpro_out <- interpro_out %>% 
-  group_by(V1) %>% 
-  slice_min(V9, n = 1)
+# add introscan annotation, load local if exists
+if(!file.exists("local_data_storage/vph_interpro_out.tsv")){
+  
+  interpro_files <- list.files("intermediate/annotations/interpro/vph", pattern = ".tsv$", full.names = TRUE)
+  interpro_out <- rbindlist(lapply(interpro_files, fread))
+  
+  # filter out unnecessary hits
+  interpro_out <- interpro_out %>% 
+    filter(V9 != "-") %>% 
+    mutate(evalue = as.numeric(V9)) %>% 
+    filter(evalue <= 10^-5) %>% 
+    filter(V6 != "-" & V13 != "-") %>% 
+    filter(!str_detect(V6, "unknown function"))
+  
+  # only get best hit per id based on evalue
+  interpro_out <- interpro_out %>% 
+    group_by(V1) %>% 
+    slice_min(V9, n = 1)
+  
+  fwrite(interpro_out, "local_data_storage/vph_interpro_out.tsv")
+}else{
+  interpro_out <- fread("local_data_storage/vph_interpro_out.tsv")
+}
 
 # add interpro annotation but only if not already known
 for(i in 1:nrow(gene_df)){

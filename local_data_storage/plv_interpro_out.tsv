@@ -1,0 +1,25 @@
+V1,V2,V3,V4,V5,V6,V7,V8,V9,V10,V11,V12,V13,V14,V15,evalue
+AalW_tig00083928-10-131450_plv_17,2736d922b96a068618d3c371bdb1366a,516,SUPERFAMILY,SSF56672,DNA/RNA polymerases,112,491,1.02E-42,T,08-07-2025,IPR043502,DNA/RNA polymerase superfamily,-,-,1.02e-42
+Aved_tig00048883-10-193450_plv_8,3051267d5118df18d1cc4e8f6edf053b,130,SUPERFAMILY,SSF82771,GIY-YIG endonuclease,4,79,2.88E-7,T,08-07-2025,IPR035901,GIY-YIG endonuclease superfamily,-,-,2.88e-07
+Aved_tig00048883-10-193450_plv_9,d3b86a2b865e37461f3c8c81122769a4,253,Pfam,PF04665,Poxvirus A32 protein,29,178,6.0E-8,T,08-07-2025,IPR006758,Poxvirus A32,-,-,6e-08
+Aved_tig00084897-10-150130_plv_3,56712805ad02efff2f931ffc383d89ec,1561,SUPERFAMILY,SSF53098,Ribonuclease H-like,920,1105,1.67E-12,T,08-07-2025,IPR012337,Ribonuclease H-like superfamily,-,-,1.67e-12
+Aved_tig00084897-10-150130_plv_9,e60ea5edb90c9af2ae49ba3f9f8713a7,244,Pfam,PF04665,Poxvirus A32 protein,50,204,1.0E-8,T,08-07-2025,IPR006758,Poxvirus A32,-,-,1e-08
+Bjer_tig00027726-10-154320_plv_8,40bfd9f0b2e83041ad9799beafd6daac,228,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,31,166,2.17E-9,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,2.17e-09
+Ejby_tig00023995-10-186920_plv_1,ced9537c1902f77e23f987d2051f9be5,184,Gene3D,G3DSA:3.90.1600.10,Palm domain of DNA polymerase,26,184,1.6E-6,T,08-07-2025,IPR023211,"DNA polymerase, palm domain superfamily",-,-,1.6e-06
+Ejby_tig00023995-10-186920_plv_19,1f38d438e889b6eaad26e754de43544b,234,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,38,203,9.4E-8,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,9.4e-08
+Ejby_tig00023995-10-186920_plv_4,d7e3ec2fa2d474ec6eed04e93e06cf25,282,SUPERFAMILY,SSF54060,His-Me finger endonucleases,74,129,3.06E-6,T,08-07-2025,IPR044925,His-Me finger superfamily,-,-,3.06e-06
+Lyne_tig00046032-10-146580_plv_18,57e662fd4535b44920ff1424b4ff7e60,703,SUPERFAMILY,SSF56672,DNA/RNA polymerases,420,688,1.26E-15,T,08-07-2025,IPR043502,DNA/RNA polymerase superfamily,-,-,1.26e-15
+Lyne_tig00046032-10-146580_plv_19,a11f8b841f37807eb78846665352418f,352,SUPERFAMILY,SSF53098,Ribonuclease H-like,43,186,2.85E-16,T,08-07-2025,IPR012337,Ribonuclease H-like superfamily,-,-,2.85e-16
+Lyne_tig00060056-10-166770_plv_22,069f73387fb591811b67f7b2405bfd18,245,Pfam,PF04665,Poxvirus A32 protein,38,197,5.1E-10,T,08-07-2025,IPR006758,Poxvirus A32,-,-,5.1e-10
+Lyne_tig00060056-10-166770_plv_9,fca86c6ab3b7f0ae4179910a26694c41,312,SUPERFAMILY,SSF53098,Ribonuclease H-like,52,172,3.34E-16,T,08-07-2025,IPR012337,Ribonuclease H-like superfamily,-,-,3.34e-16
+Mari_tig00039850-10-191400_plv_10,1ed2e15c570b1f8213dd8eccd0f34c98,1529,SUPERFAMILY,SSF56672,DNA/RNA polymerases,1094,1494,1.33E-47,T,08-07-2025,IPR043502,DNA/RNA polymerase superfamily,-,-,1.33e-47
+Mari_tig00039850-10-191400_plv_3,40bfd9f0b2e83041ad9799beafd6daac,228,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,31,166,2.17E-9,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,2.17e-09
+Rand_tig00054083-10-84480_plv_14,0037da7783fd0464f2b8951971517d8f,331,Gene3D,G3DSA:3.90.1600.10,Palm domain of DNA polymerase,23,179,2.0E-7,T,08-07-2025,IPR023211,"DNA polymerase, palm domain superfamily",-,-,2e-07
+Rand_tig00055912-10-108660_plv_2,83ef2208615aeb7a3652d9f86f085484,1336,Gene3D,G3DSA:3.90.1600.10,Palm domain of DNA polymerase,1027,1166,1.2E-13,T,08-07-2025,IPR023211,"DNA polymerase, palm domain superfamily",-,-,1.2e-13
+Rand_tig00055912-10-108660_plv_7,efe1acaa0fb7b56edbe51c8b5cf43b7b,243,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,29,198,2.39E-6,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,2.39e-06
+Rand_tig00813462-10-110980_plv_2,baee2fcb564a315b4be33505257cd6de,1288,Gene3D,G3DSA:3.90.1600.10,Palm domain of DNA polymerase,992,1155,1.1E-12,T,08-07-2025,IPR023211,"DNA polymerase, palm domain superfamily",-,-,1.1e-12
+Rand_tig00813462-10-110980_plv_7,e395b3eaf893af662dbbb5daeba257b6,220,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,4,62,3.24E-6,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,3.24e-06
+Ribe_tig00030249-10-170680_plv_15,40bfd9f0b2e83041ad9799beafd6daac,228,SUPERFAMILY,SSF52540,P-loop containing nucleoside triphosphate hydrolases,31,166,2.17E-9,T,08-07-2025,IPR027417,P-loop containing nucleoside triphosphate hydrolase,-,-,2.17e-09
+Ribe_tig00030249-10-170680_plv_3,04fd1f5a1c656c76ccc527990abe6c1e,290,Pfam,PF03175,"DNA polymerase type B, organellar and viral",32,282,1.9E-21,T,08-07-2025,IPR004868,"DNA-directed DNA polymerase, family B, mitochondria/virus",-,-,1.9e-21
+Ribe_tig00030249-10-170680_plv_4,ab7e2e753772d676ab65d275dd279944,232,Gene3D,G3DSA:3.90.1600.10,Palm domain of DNA polymerase,53,174,2.0E-18,T,08-07-2025,IPR023211,"DNA polymerase, palm domain superfamily",-,-,2e-18
+Vibo_tig00019442-10-136670_plv_20,2736d922b96a068618d3c371bdb1366a,516,SUPERFAMILY,SSF56672,DNA/RNA polymerases,112,491,1.02E-42,T,08-07-2025,IPR043502,DNA/RNA polymerase superfamily,-,-,1.02e-42
