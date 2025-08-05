@@ -382,6 +382,57 @@ for(layer in c(unique(big_connection_df$type), "all")){
 
 
 
+# gene sharing centrality -------------------------------------------------
+# the idea is: lcs which are connected to GVs are on average connected more to other entities, than LCs that are not connected to GVs
+
+all_strings <- c(edgelist_gene_sharing$from, edgelist_gene_sharing$to)
+all_lcs <- unique(all_strings[str_ends(all_strings, "lc")])
+
+lc_df <- data.table(contig = all_lcs,
+                    connections = 0,
+                    is_GV_connected = FALSE)
+
+for(i in 1:nrow(lc_df)){
+  # which lc are we looking at?
+  current_LC <- lc_df$contig[i]
+  
+  # filter to only retain tmp with this lc
+  tmp_df <- edgelist_gene_sharing %>% 
+    filter(from == current_LC | to == current_LC)
+  
+  # is there a gv connected to the lc?
+  if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
+    lc_df$is_GV_connected[i] <- TRUE
+  }
+  
+  # how many unique connections do we count?
+  tmp_df <- tmp_df %>%
+    rowwise() %>%
+    mutate(connection = paste(sort(c(from, to)), collapse = "-"))
+  
+  lc_df$connections[i]  <- n_distinct(tmp_df$connection)
+}
+
+p <- ggplot(lc_df, aes(x = is_GV_connected, y = connections, fill = is_GV_connected)) +
+  geom_signif(
+    comparisons = list(c("FALSE", "TRUE")),
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
+  geom_boxplot() +
+  theme_cowplot() +
+  theme(legend.position = "None") +
+  ylim(c(0,NA)) +
+  scale_y_log10() +
+  scale_x_discrete(labels = c("not-connected", "GV-connected")) +
+  scale_fill_manual(values = c("FALSE" = "grey", "TRUE" = "steelblue")) +
+  ggtitle(label = "Gene Sharing Comparison",
+          subtitle = "Number of connections of gv-connected vs non-connected LCs") +
+  ylab("# of gene sharing connections") +
+  xlab("")
+
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.svg", height = 6, width = 6)
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.pdf", height = 6, width = 6)
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.png", height = 6, width = 6)
+
 
 # PLVs and VPHs -----------------------------------------------------------
 
