@@ -10,6 +10,7 @@ library(stringr)
 library(gggenomes)
 library(googlesheets4)
 library(gggenes)
+library(paletteer)
 
 
 
@@ -287,12 +288,12 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
   facet_wrap(~ molecule, scales = "free", ncol = 1) +
   scale_fill_manual(values = c(
     # Top 6 most significant genes
-    MCP_1 = "#FDBF6F",                   
-    `DNA Pol` = "#014263",              
-    ATPase_1 = "#00ffba",                
-    Penton_1 = "gold",                
-    `Integrase core domain` = "#fc8484", 
-    PRO_1 = "#8A2BE2",
+    MCP_1 = "#F28E2BFF",                   
+    `DNA Pol` = "#4E79A7FF",              
+    ATPase_1 = "#59A14FFF",                
+    Penton_1 = "#B6992DFF",                
+    `Integrase core domain` = "#499894FF", 
+    PRO_1 = "#E15759FF",
     
     # Other functional genes in shades of gray
     `His-Me ENase` = "#D3D3D3",
@@ -332,5 +333,9 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
   )
 
 ggsave(plot = last_plot(), file = "final/vph_genome_map.png", height = 4.5, width = 8)
+ggsave(plot = last_plot(), file = "final/vph_genome_map.svg", height = 4.5, width = 8)
 
+
+
+palette_used <- paletteer_d("ggthemes::Tableau_20")
 
