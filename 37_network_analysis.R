@@ -236,12 +236,236 @@ for(contig in gvs){
 }
 
 
-# Suppose your facet variable has values: "A", "B", "C"
-ggplot(data, aes(x, y)) +
-  geom_point() +
-  facet_wrap(~ group, labeller = labeller(
-    group
+
+
+
+# centrality --------------------------------------------------------------
+
+# we need to do this for each layer seperately and then one combined:
+for(layer in c(unique(big_connection_df$type), "all")){
+  print(layer)
+  
+  if(layer == "all"){
+    g <- graph_from_data_frame(big_connection_df)
+  }else{
+    g <- graph_from_data_frame(big_connection_df %>% filter(type == layer))
+  }
+  
+  deg <- degree(g, mode = "all")
+  btw <- betweenness(g, directed = FALSE, normalized = TRUE)
+  
+  deg_df <- enframe(deg, name = "contig_id", value = "degree")
+  btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
+  
+  network_df <- left_join(deg_df, btw_df)
+  network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
+  
+  # set order of entities
+  network_df$contig_type <- factor(network_df$contig_type,
+                                   levels = c("lc", "gv", "plv", "vph"))
+  
+  deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_type)) +
+    geom_boxplot() +
+    geom_signif(
+      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    scale_y_log10() +
+    labs(
+      title = "Degree Distribution",
+      subtitle = paste0("Layer: ", layer), 
+      x = "Contig Type",
+      y = "Degree (log10)"
+    ) +
+    theme_cowplot() +
+    theme(legend.position = "none") +
+    scale_fill_manual(values = c(
+      vph = "goldenrod1",
+      lc = "seagreen",
+      plv = "hotpink",
+      gv = "steelblue"
+    ))
+  deg_plot  
+  
+  
+  
+  bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = contig_type)) +
+    geom_boxplot() +
+    geom_signif(
+      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    scale_y_log10() +
+    labs(
+      title = "Betweenness Distribution",
+      subtitle = paste0("Layer: ", layer),
+      x = "Contig Type",
+      y = "Betweeness (log10)"
+    ) +
+    theme_cowplot() +
+    theme(legend.position = "none") +
+    scale_fill_manual(values = c(
+      vph = "goldenrod1",
+      lc = "seagreen",
+      plv = "hotpink",
+      gv = "steelblue"
+    ))
+  
+  p <- deg_plot + bet_plot
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.png"), width = 7, height = 4)
+}
+
+
+# centrality Figure for maintext ------------------------------------------
+
+g <- graph_from_data_frame(big_connection_df %>% filter(type == "gene_sharing"))
+
+deg <- degree(g, mode = "all")
+btw <- betweenness(g, directed = FALSE, normalized = TRUE)
+
+deg_df <- enframe(deg, name = "contig_id", value = "degree")
+btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
+
+network_df <- left_join(deg_df, btw_df)
+network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
+
+# add the information: is the lc connected to a gv or not?
+for(i in 1:nrow(network_df)){
+  current_lc <- network_df$contig_id[i]
+  
+  # this only applies to LCs, skip if non-lc
+  if(!str_ends(current_lc, "\\_lc$")){
+    next
+  }
+  
+  # else check if we are connected to a GV though gene sharing
+  tmp_df <- edgelist_gene_sharing %>% 
+    filter(from == current_lc | to == current_lc)
+  
+  if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
+    network_df$contig_type[i] <- "lc_gv_connected"
+  }
+  
+}
+
+# set order of entities
+network_df$contig_type <- factor(network_df$contig_type,
+                                 levels = c("lc", "lc_gv_connected", "gv", "plv", "vph"))
+
+deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_type)) +
+  geom_boxplot() +
+  geom_signif(
+    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+  scale_y_log10() +
+  labs(
+    title = "Degree Distribution",
+    subtitle = paste0("Layer: Gene Sharing"), 
+    x = "Contig Type",
+    y = "Degree (log10)"
+  ) +
+  theme_cowplot() +
+  theme(legend.position = "none",
+        axis.text.y = element_text(size = 9),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9),
+        axis.title.x = element_blank()) +
+  scale_x_discrete(labels = c("MC", "MC (GV-connected)", "GV", "PLV", "VPH")) +
+  scale_fill_manual(values = c(
+    vph = "goldenrod1",
+    lc = "seagreen",
+    plv = "hotpink",
+    gv = "steelblue",
+    lc_gv_connected = "#248191"
   ))
+deg_plot  
+
+
+bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = contig_type)) +
+  geom_boxplot() +
+  geom_signif(
+    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+  scale_y_log10() +
+  labs(
+    title = "Betweenness Distribution",
+    subtitle = paste0("Layer: Gene Sharing"),
+    x = "Contig Type",
+    y = "Betweeness (log10)"
+  ) +
+  theme_cowplot() +
+  theme(legend.position = "none",
+        axis.text.y = element_text(size = 9),
+        axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9),
+        axis.title.x = element_blank()) +
+  scale_x_discrete(labels = c("MC", "MC (GV-connected)", "GV", "PLV", "VPH")) +
+  scale_fill_manual(values = c(
+    vph = "goldenrod1",
+    lc = "seagreen",
+    plv = "hotpink",
+    gv = "steelblue",
+    lc_gv_connected = "#248191"
+  )) 
+
+p <- deg_plot + bet_plot
+ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connected_vs_others.png", width = 7, height = 4)
+ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connected_vs_others.pdf", width = 7, height = 4)
+ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connected_vs_others.svg", width = 7, height = 4)
+
+
+# gene sharing centrality -------------------------------------------------
+# the idea is: lcs which are connected to GVs are on average connected more to other entities, than LCs that are not connected to GVs
+# this goes to SUPP, but the idea is built in the figure above
+
+all_strings <- c(edgelist_gene_sharing$from, edgelist_gene_sharing$to)
+all_lcs <- unique(all_strings[str_ends(all_strings, "lc")])
+
+lc_df <- data.table(contig = all_lcs,
+                    connections = 0,
+                    is_GV_connected = FALSE)
+
+for(i in 1:nrow(lc_df)){
+  # which lc are we looking at?
+  current_LC <- lc_df$contig[i]
+  
+  # filter to only retain tmp with this lc
+  tmp_df <- edgelist_gene_sharing %>% 
+    filter(from == current_LC | to == current_LC)
+  
+  # is there a gv connected to the lc?
+  if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
+    lc_df$is_GV_connected[i] <- TRUE
+  }
+  
+  # how many unique connections do we count?
+  tmp_df <- tmp_df %>%
+    rowwise() %>%
+    mutate(connection = paste(sort(c(from, to)), collapse = "-"))
+  
+  lc_df$connections[i]  <- n_distinct(tmp_df$connection)
+}
+
+p <- ggplot(lc_df, aes(x = is_GV_connected, y = connections, fill = is_GV_connected)) +
+  geom_signif(
+    comparisons = list(c("FALSE", "TRUE")),
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
+  geom_boxplot() +
+  theme_cowplot() +
+  theme(legend.position = "None") +
+  ylim(c(0,NA)) +
+  scale_y_log10() +
+  scale_x_discrete(labels = c("not-connected", "GV-connected")) +
+  scale_fill_manual(values = c("FALSE" = "grey", "TRUE" = "steelblue")) +
+  ggtitle(label = "Gene Sharing Comparison",
+          subtitle = "Number of connections of gv-connected vs non-connected LCs") +
+  ylab("# of gene sharing connections") +
+  xlab("")
+
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.svg", height = 6, width = 6)
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.pdf", height = 6, width = 6)
+ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.png", height = 6, width = 6)
+
+
+
+
+# OLD NOT IMPORTANT
 # another idea: GV-LC partners --------------------------------------------
 
 VIRUS_HOST_df <- data.table(gv_id = as.character(),
@@ -304,134 +528,6 @@ VIRUS_HOST_df$host_tax_perc <- str_replace(VIRUS_HOST_df$host_tax_perc, "\\.", "
 
 fwrite(VIRUS_HOST_df, "tmp_V_H_pairs.csv")
 
-
-
-# centrality --------------------------------------------------------------
-
-# we need to do this for each layer seperately and then one combined:
-for(layer in c(unique(big_connection_df$type), "all")){
-  print(layer)
-  
-  if(layer == "all"){
-    g <- graph_from_data_frame(big_connection_df)
-  }else{
-    g <- graph_from_data_frame(big_connection_df %>% filter(type == layer))
-  }
-  
-  deg <- degree(g, mode = "all")
-  btw <- betweenness(g, directed = TRUE, normalized = TRUE)
-  
-  deg_df <- enframe(deg, name = "contig_id", value = "degree")
-  btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
-  
-  network_df <- left_join(deg_df, btw_df)
-  network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
-  
-  # set order of entities
-  network_df$contig_type <- factor(network_df$contig_type,
-                                   levels = c("lc", "gv", "plv", "vph"))
-  
-  deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_type)) +
-    geom_boxplot() +
-    geom_signif(
-      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
-      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
-    scale_y_log10() +
-    labs(
-      title = "Degree Distribution",
-      subtitle = paste0("Layer: ", layer), 
-      x = "Contig Type",
-      y = "Degree (log10)"
-    ) +
-    theme_cowplot() +
-    theme(legend.position = "none") +
-    scale_fill_manual(values = c(
-      vph = "goldenrod1",
-      lc = "seagreen",
-      plv = "hotpink",
-      gv = "steelblue"
-    ))
-  deg_plot  
-  
-  
-  
-  bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = contig_type)) +
-    geom_boxplot() +
-    geom_signif(
-      comparisons = list(c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
-      map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
-    scale_y_log10() +
-    labs(
-      title = "Betweeness Distribution",
-      subtitle = paste0("Layer: ", layer),
-      x = "Contig Type",
-      y = "Betweeness (log10)"
-    ) +
-    theme_cowplot() +
-    theme(legend.position = "none") +
-    scale_fill_manual(values = c(
-      vph = "goldenrod1",
-      lc = "seagreen",
-      plv = "hotpink",
-      gv = "steelblue"
-    ))
-  
-  p <- deg_plot + bet_plot
-  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.png"), width = 7, height = 4)
-}
-
-
-
-# gene sharing centrality -------------------------------------------------
-# the idea is: lcs which are connected to GVs are on average connected more to other entities, than LCs that are not connected to GVs
-
-all_strings <- c(edgelist_gene_sharing$from, edgelist_gene_sharing$to)
-all_lcs <- unique(all_strings[str_ends(all_strings, "lc")])
-
-lc_df <- data.table(contig = all_lcs,
-                    connections = 0,
-                    is_GV_connected = FALSE)
-
-for(i in 1:nrow(lc_df)){
-  # which lc are we looking at?
-  current_LC <- lc_df$contig[i]
-  
-  # filter to only retain tmp with this lc
-  tmp_df <- edgelist_gene_sharing %>% 
-    filter(from == current_LC | to == current_LC)
-  
-  # is there a gv connected to the lc?
-  if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
-    lc_df$is_GV_connected[i] <- TRUE
-  }
-  
-  # how many unique connections do we count?
-  tmp_df <- tmp_df %>%
-    rowwise() %>%
-    mutate(connection = paste(sort(c(from, to)), collapse = "-"))
-  
-  lc_df$connections[i]  <- n_distinct(tmp_df$connection)
-}
-
-p <- ggplot(lc_df, aes(x = is_GV_connected, y = connections, fill = is_GV_connected)) +
-  geom_signif(
-    comparisons = list(c("FALSE", "TRUE")),
-    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
-  geom_boxplot() +
-  theme_cowplot() +
-  theme(legend.position = "None") +
-  ylim(c(0,NA)) +
-  scale_y_log10() +
-  scale_x_discrete(labels = c("not-connected", "GV-connected")) +
-  scale_fill_manual(values = c("FALSE" = "grey", "TRUE" = "steelblue")) +
-  ggtitle(label = "Gene Sharing Comparison",
-          subtitle = "Number of connections of gv-connected vs non-connected LCs") +
-  ylab("# of gene sharing connections") +
-  xlab("")
-
-ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.svg", height = 6, width = 6)
-ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.pdf", height = 6, width = 6)
-ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.png", height = 6, width = 6)
 
 
 # PLVs and VPHs -----------------------------------------------------------
