@@ -127,23 +127,11 @@ aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_viru
 
 tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) %<+% tree_data
 tree + 
-  geom_tiplab(mapping = aes(label = short_id, 
-                            colour = show_in_tree, 
-                            fontface = label_bold),
-              linesize = 0.25,
-              align = TRUE, 
-              size = 1.6,
-              hjust = -0.05,
-              offset = 1.5) +
-  # scale_linetype_manual(values = c("blank" = "dotted", "aa" = "aa")) +
-  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "black"), guide = "none") +
-  theme_tree() +
+  # first order
   geom_fruit(geom = geom_tile,
              mapping = aes(y = tip_label, fill = tax_order),
-             color = "black", offset = 0.1, size = 0.3) +
-  scale_fill_manual(guide = guide_legend(title = "Order", 
-                                         keywidth=0.5,
-                                         keyheight=0.5, ncol = 2),
+             color = "black", offset = 0.02, size = 0.3) +
+  scale_fill_manual(guide = guide_legend(title = "Order", ncol = 1),
                     values = c(
                       "Yaravirales"     = "#1b9e77",  # teal
                       "Asfuvirales"     = "#d95f02",  # orange
@@ -157,6 +145,7 @@ tree +
                     ),
                     na.translate = FALSE) +
   new_scale_fill() +
+  # then completeness
   geom_fruit(geom = geom_tile,
              mapping = aes(y = tip_label, fill = completeness),
              color = "black", offset = 0.03, size = 0.3) +
@@ -167,9 +156,7 @@ tree +
                "incomplete" = "#FFD7C4"),  
     na.translate = FALSE,  # suppress legend item and display for NA
     na.value = "white",
-    guide = guide_legend(title = "Completeness", 
-                         keywidth=0.5,
-                         keyheight=0.5)
+    guide = guide_legend(title = "Completeness")
   ) +
   # Point showing circularity
   geom_fruit(
@@ -177,23 +164,39 @@ tree +
     mapping = aes(y = tip_label, shape = circularity),
     fill = "black",
     alpha = 0.8,
-    size = 1.2, offset = 0.05
+    size = 1.2, offset = 0.03
   ) +
+  # then labels
   scale_shape_manual(
     values = c("Y" = 19, "N" = 17),  # 21 = circle, 22 = square
     na.translate = FALSE,  # suppress legend item and display for NA,
-    guide = "none"
+    guide = guide_legend(title = "Circularity"),
+    labels = c("Y" = "circular", "N" = "linear")
   ) +
+  geom_tiplab(mapping = aes(label = short_id, 
+                            colour = show_in_tree, 
+                            fontface = label_bold),
+              linesize = 0.25,
+              align = TRUE, 
+              size = 1.6,
+              hjust = 0,
+              offset = 0.7) +
+  # scale_linetype_manual(values = c("blank" = "dotted", "aa" = "aa")) +
+  scale_color_manual(values = c("TRUE" = "black", "FALSE" = "black"), guide = "none") +
+  theme_tree() +
   theme(legend.background=element_rect(fill=NA),
-        legend.text=element_text(size=8),
-        legend.position=c(0.7, 0.34),
-        plot.margin = unit(c(1,2,0.5,0.8), "cm")) +
+        legend.text=element_text(size=6),
+        legend.title = element_text(size = 7, face = "bold"),
+        legend.position=c(1, 0.28),
+        legend.key.size = unit(0.25, "cm"),
+        plot.margin = unit(c(2,2,0.5,0.8), "cm"),
+        legend.spacing.y = unit(0.1, "cm")) +
   xlim_tree(c(NA, 5))
 
 
 
 ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.pdf", height = 8, width = 8)
-ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.svg", height = 6, width = 10)
+ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.svg", height = 8, width = 8)
 
 
 
