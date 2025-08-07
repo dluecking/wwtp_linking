@@ -169,6 +169,8 @@ tree_data <- tree_data %>%
 
 # plotting ----------------------------------------------------------------
 
+tree_midpoint <- phangorn::midpoint(tree = tree) # I used this only once, to show that the PLVs are the correct outgroup
+
 a <- ggtree(tree, layout = "fan", open.angle = 180, right = F) %<+% tree_data
 a + 
   geom_tiplab(aes(label = short_id, fontface = label_bold), 
@@ -228,7 +230,13 @@ a +
   theme(legend.background=element_rect(fill=NA),
         legend.text=element_text(size=8) ,
         legend.position=c(0.99, 0.9),
-        plot.margin = unit(c(0.3,2,-10,1), "cm"))
+        plot.margin = unit(c(0.3,2,-10,1), "cm")) +
+  geom_nodepoint(
+    mapping = aes(subset = !is.na(as.numeric(label)) & as.numeric(label) > 90), # Or > 0.95 for LPP
+    color = "black",
+    size = 1.0,
+    shape = 19  # A solid circle
+  )
 
 
 ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.pdf", height = 6, width = 10)

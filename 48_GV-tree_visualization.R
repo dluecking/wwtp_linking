@@ -125,8 +125,8 @@ tree_data <- tree_data %>%
 # first re-root to poxvirius (we dont have pokkes)
 aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
 
-tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) %<+% tree_data
-tree + 
+tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) 
+tree %<+% tree_data + 
   # first order
   geom_fruit(geom = geom_tile,
              mapping = aes(y = tip_label, fill = tax_order),
@@ -191,7 +191,13 @@ tree +
         legend.key.size = unit(0.25, "cm"),
         plot.margin = unit(c(2,2,0.5,0.8), "cm"),
         legend.spacing.y = unit(0.1, "cm")) +
-  xlim_tree(c(NA, 5))
+  xlim_tree(c(NA, 5)) +
+  geom_nodepoint(
+    mapping = aes(subset = !is.na(as.numeric(label)) & as.numeric(label) > 0.75), # Or > 0.95 for LPP
+    color = "black",
+    size = 1.0,
+    shape = 19  # A solid circle
+  )
 
 
 
@@ -200,9 +206,16 @@ ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.svg", heig
 
 
 
+# stats on different nuphylo trees ----------------------------------------
 
+SINGLE_TREE_DIR <- list.dirs("intermediate/GV_tree/nuhpylo_output", recursive = FALSE)
 
+trees <- lapply(paste0(SINGLE_TREE_DIR, "/allseqs.nwk"), read.tree)
+names(trees) <- basename(SINGLE_TREE_DIR)
 
+library(TreeDist)
+
+kc_distances <- KendallColijn(trees)
 
 
 
