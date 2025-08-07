@@ -125,6 +125,9 @@ tree_data <- tree_data %>%
 # first re-root to poxvirius (we dont have pokkes)
 aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
 
+# midpoint rooting, only used once:
+midpoint_tree <- phangorn::midpoint(aster_tree)
+
 tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) 
 tree %<+% tree_data + 
   # first order
