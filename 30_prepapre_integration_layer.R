@@ -56,18 +56,18 @@ for(type in unique(blast_out8080$overhang_type)){
 
 # explore -----------------------------------------------------------------
 
-b_out <- blast_out %>% 
-  filter(!str_ends(qseqid, "m")) %>% 
-  filter(pident >= 70, qcov >= 5) %>% 
-  mutate(direction_of_overhang = str_extract(qseqid, "\\d$"))
+# b_out <- blast_out %>% 
+#   filter(!str_ends(qseqid, "m")) %>% 
+#   filter(pident >= 70, qcov >= 5) %>% 
+#   mutate(direction_of_overhang = str_extract(qseqid, "\\d$"))
 
-result_table <- b_out %>%
-  group_by(mapped_to, sseqid) %>%
-  summarise(
-    number_of_5 = sum(direction_of_overhang == "5", na.rm = TRUE),
-    number_of_3 = sum(direction_of_overhang == "3", na.rm = TRUE),
-    .groups = 'drop' # This drops the grouping after summarising
-  )
+# result_table <- b_out %>%
+#   group_by(mapped_to, sseqid) %>%
+#   summarise(
+#     number_of_5 = sum(direction_of_overhang == "5", na.rm = TRUE),
+#     number_of_3 = sum(direction_of_overhang == "3", na.rm = TRUE),
+#     .groups = 'drop' # This drops the grouping after summarising
+#   )
 
-result_table_filtered <- result_table %>% 
-  filter(number_of_5 > 0 & number_of_3 > 0)
+# result_table_filtered <- result_table %>% 
+#   filter(number_of_5 > 0 & number_of_3 > 0)
