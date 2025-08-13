@@ -9,9 +9,7 @@
 
 # --- Load Modules ---
 module load prodigal
-# If your prodigal is managed via Conda, you might need:
-# module load conda
-# conda activate bioinf # (Ensure prodigal is in this environment)
+
 
 echo "Starting Prodigal protein prediction using four distinct loops..."
 echo "---"

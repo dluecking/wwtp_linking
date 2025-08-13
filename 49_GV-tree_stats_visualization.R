@@ -75,7 +75,44 @@ p2 <- ggplot(gv_data, aes(x = personal_assessment_order, y = gc, fill = personal
     )
   )
 
-p_composite <- p1 / p2
+# add ORFan information for each GV ---------------------------------------
+
+annot_files <- paste0("intermediate/gv_annotations/", gv_data$shortname, "_polished_annotation.csv")
+annot_df_list <- lapply(annot_files, fread)
+names(annot_df_list) <- gv_data$shortname
+
+gv_data$annotated_ORFs <- NA
+
+for(i in 1:nrow(gv_data)){
+  gv_data$annotated_ORFs[i] <- nrow(annot_df_list[[gv_data$shortname[i]]])
+}
+
+gv_data$ORFan_perc <- round((gv_data$ORFs - gv_data$annotated_ORFs) / gv_data$ORFs * 100, 2)
+
+p3 <- ggplot(gv_data, aes(x = personal_assessment_order, y = ORFan_perc, fill = personal_assessment_order)) +
+  geom_boxplot(alpha = 0.9) +
+  xlab("") +
+  ylab("ORFans [%]") +
+  theme_cowplot() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 9),
+        legend.position = "none") +
+  scale_fill_manual(
+    name = "Category",
+    values = c(
+      "Yaravirales" = "#1b9e77",
+      "Asfuvirales" = "#d95f02",
+      "Imitervirales" = "#66a61e",
+      "Pandoravirales" = "#e7298a",
+      "Pimascovirales" = "#7570b3",
+      "unknown" = "grey"
+    )
+  )
+
+
+
+
+p_composite <- p1 / p3 / p2 
 p_composite
 
 ggsave(plot = p_composite, file = "final/gv_stats.pdf", height = 5, width = 4)
