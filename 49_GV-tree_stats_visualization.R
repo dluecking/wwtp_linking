@@ -107,7 +107,8 @@ p3 <- ggplot(gv_data, aes(x = personal_assessment_order, y = ORFan_perc, fill = 
       "Pimascovirales" = "#7570b3",
       "unknown" = "grey"
     )
-  )
+  ) +
+  ylim(c(33, 100))
 
 
 
