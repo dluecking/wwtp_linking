@@ -290,13 +290,13 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
   geom_blank(data = dummies) +
   facet_wrap(~ molecule, scales = "free", ncol = 1) +
   scale_fill_manual(values = c(
-    MCP = "#FFBE7DFF",            # Stays hotpink - distinct and vibrant
-    `DNA Pol` = "#A0CBE8FF",      # Deep, bold red - excellent for highlighted/important
-    A32 = "#8CD17DFF",            # Soft, light blue - subtle, not highlighted
-    `GIY-YIG ENase` = "#F1CE63FF", # Lighter, softer purple
-    `His-Me ENase` = "#86BCB6FF",  # Deeper, richer purple - clearly related, but distinct
-    `P-loop NTPase` = "#FF9D9AFF", # Warm, rich burnt orange
-    `RNaseH-like sf` = "#D4A6C8FF", # Deeper, more brownish-orange - clearly related, but distinct
+    MCP = "hotpink",            # Stays hotpink - distinct and vibrant
+    `DNA Pol` = "#E2D3CEFF",      # Deep, bold red - excellent for highlighted/important
+    A32 = "#DFC8CBFF",            # Soft, light blue - subtle, not highlighted
+    `GIY-YIG ENase` = "#CD9ABCFF", # Lighter, softer purple
+    `His-Me ENase` = "#C28AB1FF",  # Deeper, richer purple - clearly related, but distinct
+    `P-loop NTPase` = "#B980A7FF", # Warm, rich burnt orange
+    `RNaseH-like sf` = "#AC7299FF", # Deeper, more brownish-orange - clearly related, but distinct
     hypothetical = "white"    # Very light grey, almost white - for background/hypothetical
   )) +
   theme_genes() +
