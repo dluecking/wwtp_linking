@@ -7,7 +7,7 @@ Folder structure:
 - "helperfiles/": Files used by scripts to perform specific actions.
 - "local_data_storage/": Data used by scripts, in order to avoid larger files to be uploaded.
 - "scripts/": Minor scripts used in this project.
-- "01_XXX" to "50_XXX": Scripts used to perform analysis (sorry, this should be a snakemake worklfow, will do at some point). 
+- "01_XXX" to "50_XXX": Scripts used to perform analysis (sorry, this should be a snakemake workflow, will do at some point). 
 
 ### TBD
 - upload manuscripts
