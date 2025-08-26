@@ -44,7 +44,7 @@ names(blast_df) <- c("qseqid", "sseqid", "pident", "length", "mismatch",
 blast_df$q_contig <- str_remove(blast_df$qseqid, "\\_[A-z]*$")
 blast_df$s_contig <- str_remove(blast_df$sseqid, "\\_[A-z]*$")
 blast_df <- blast_df %>% 
-  filter(length >100) %>% # only hits longer than 100bp are valid
+  filter(length >20) %>% # only hits longer than 100bp are valid
   filter(q_contig == s_contig & qseqid != sseqid) # only start vs end is valid but not self hits
 
 

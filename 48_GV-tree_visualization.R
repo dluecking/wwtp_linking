@@ -22,7 +22,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474", 
                       sheet = "Final GVs overview") %>% 
   filter(!is.na(sample))
-# we needed this fix, but fixed in "45_GV-tree_rename_ncldv_output_proteins.R"
+
 GV_info$tip_label <- GV_info$shortname
 
 
@@ -53,7 +53,7 @@ tree_data <- tree_data %>%
 
 # but now lets add family information so we can color!
 tree_data <- tree_data %>%
-  left_join(GV_info %>% select(tip_label, personal_assessment_order),
+  left_join(GV_info %>% select(tip_label, personal_assessment_order, public_ID),
             by = "tip_label") %>%
   left_join(nuphylo_GV_data %>% select(Genome, Order),
             by = c("tip_label" = "Genome")) %>%
@@ -80,7 +80,7 @@ tree_data$completeness <- GV_info$completeness[match(tree_data$tip_label, GV_inf
 tree_data <- tree_data %>% 
   mutate(
     short_id = case_when(
-      tip_label %in% GV_info$tip_label ~ tip_label,
+      tip_label %in% GV_info$tip_label ~ public_ID,
       tip_label == "Poxviridae_AF198100_Fowlpox_virus" ~ "Poxvirus Fowlpox (AF198100)",
       tip_label == "Phycodnaviridae_KF481685_Emiliania_huxleyi_virus_18" ~ "Emiliania_huxleyi_virus (KF481685)",
       tip_label == "Asfarviridae_KU702951_Faustovirus_strain_D6" ~ "Faustovirus D6 (KU702951)",
@@ -128,7 +128,10 @@ aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_viru
 # midpoint rooting, only used once:
 midpoint_tree <- phangorn::midpoint(aster_tree)
 
-tree <- ggtree(aster_tree, layout = "fan", open.angle = 90) 
+tree <- ggtree(aster_tree, layout = "fan", open.angle = 90)
+#  flip(41, 186) # this was supposed to flip the one clade where the flipping would help, but it fucks up the tree...
+
+
 tree %<+% tree_data + 
   # first order
   geom_fruit(geom = geom_tile,
@@ -200,8 +203,7 @@ tree %<+% tree_data +
     color = "black",
     size = 1.0,
     shape = 19  # A solid circle
-  )
-
+  ) 
 
 
 ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.pdf", height = 8, width = 8)

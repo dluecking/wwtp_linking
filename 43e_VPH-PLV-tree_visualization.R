@@ -74,25 +74,27 @@ for(i in 1:nrow(tree_data)){
     # is it a plv?
     if(str_detect(tree_data$tip_label[i], "\\_plv\\_")){
       # its a plv, fill in fields!
-      tree_data$short_id[i] <- str_extract(tree_data$tip_label[i], "^.*\\_plv")
+      plv_contig_name <- str_extract(tree_data$tip_label[i], "^.*\\_plv")
+      tree_data$short_id[i] <- plv_df$public_ID[plv_df$contig == plv_contig_name]
       tree_data$long_id[i] <- tree_data$short_id[i]
       tree_data$class[i] <- "Polinton-like virus"
       tree_data$order[i] <- "Polinton-like virus"
       tree_data$familiy[i] <- "Unclassified"
       tree_data$origin[i] <- "this study"
-      tree_data$length[i] <- plv_df$length[plv_df$contig == tree_data$short_id[i]]
+      tree_data$length[i] <- plv_df$length[plv_df$public_ID == tree_data$short_id[i]]
       # skip to next one
       next
       
     }else{
       # then its a vph!
-      tree_data$short_id[i] <- str_extract(tree_data$tip_label[i], "^.*\\_vph")
+      vph_contig_name <- str_extract(tree_data$tip_label[i], "^.*\\_vph")
+      tree_data$short_id[i] <- vph_df$public_ID[vph_df$contig_ID == str_remove(vph_contig_name, "\\_vph")]
       tree_data$long_id[i] <- tree_data$short_id[i]
       tree_data$class[i] <- "Virophaviricetes"
       tree_data$order[i] <- "Unclassified"
       tree_data$familiy[i] <- "Unclassified"
       tree_data$origin[i] <- "this study"
-      tree_data$length[i] <- vph_df$length[vph_df$contig_ID == str_remove(tree_data$short_id[i], "\\_vph")]
+      tree_data$length[i] <- vph_df$length[vph_df$public_ID == str_remove(tree_data$short_id[i], "\\_vph")]
       
       # skip to next one
       next
@@ -173,9 +175,14 @@ tree_midpoint <- phangorn::midpoint(tree = tree) # I used this only once, to sho
 
 a <- ggtree(tree, layout = "fan", open.angle = 180, right = F) %<+% tree_data
 a + 
-  geom_tiplab(aes(label = short_id, fontface = label_bold), 
-              align = TRUE, linesize = 0.05, size = 2, offset = 1.8) +
-  
+  geom_tiplab(
+    aes(label = ifelse(grepl("^IMG", short_id), NA, short_id), 
+        fontface = label_bold), 
+    align = TRUE, 
+    linesize = 0.05, 
+    size = 2, 
+    offset = 1.8
+  ) +
   geom_fruit(
     geom = geom_tile,
     mapping = aes(y = tip_label, fill = origin),
