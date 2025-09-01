@@ -74,7 +74,7 @@ presence_plot <- ggplot(data_long, aes(x = Station, y = VirusType)) +
 presence_plot
 
 
-ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.png", width = 7, height = 2.5)
-ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.pdf", width = 7, height = 2.5)
-ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.svg", width = 7, height = 2.5)
+ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.png", width = 14, height = 2.5)
+ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.pdf", width = 14, height = 2.5)
+ggsave(plot = presence_plot, file = "final/NCV_VPH_PLV_per_station.svg", width = 14, height = 2.5)
 

@@ -236,15 +236,14 @@ a +
   ) +
   theme(legend.background=element_rect(fill=NA),
         legend.text=element_text(size=8) ,
-        legend.position=c(0.99, 0.9),
-        plot.margin = unit(c(0.3,2,-10,1), "cm")) +
+        legend.position=c(0.92, 0.95),
+        plot.margin = unit(c(0.3,1,-13,1), "cm")) +
   geom_nodepoint(
     mapping = aes(subset = !is.na(as.numeric(label)) & as.numeric(label) > 90), # Or > 0.95 for LPP
     color = "black",
     size = 1.0,
     shape = 19  # A solid circle
   )
-
 
 ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.pdf", height = 6, width = 10)
 ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.svg", height = 6, width = 10)

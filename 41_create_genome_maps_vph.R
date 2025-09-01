@@ -14,9 +14,12 @@ library(paletteer)
 
 
 
-# set wogggenomes# set working directory
+# set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
+# load google sheet:
+sheet_url <- "https://docs.google.com/spreadsheets/d/113hSsqFV73bfdHTs5WoFFQU1DvnAcV5kPYmtanhROsY/edit?usp=sharing"
+vph_info <- read_sheet(sheet_url, sheet = "virophages") 
 
 # functions ---------------------------------------------------------------
 
@@ -153,8 +156,6 @@ if(!file.exists("local_data_storage/vph_gene_df.tsv")){
   gene_df <- fread("local_data_storage/vph_gene_df.tsv")
 }
 
-
-
 # add introscan annotation, load local if exists
 if(!file.exists("local_data_storage/vph_interpro_out.tsv")){
   
@@ -255,68 +256,94 @@ gene_df_reversed <- gene_df_reversed %>%
   mutate(annotation_short = ifelse(count < 2, "other", annotation_short)) %>%
   select(-count)
 
-# order needs to be set
-# this is sorted by subclusters on top (1, 2, 3, then singles)
+# 1. Add the "_vph" suffix to the contig_ID column in vph_info
+vph_info <- vph_info %>%
+  mutate(contig_ID = paste0(contig_ID, "_vph"))
+
+# Now, create the mapping from the corrected data frame
+id_map <- setNames(vph_info$public_ID, vph_info$contig_ID)
+
+# 2. Add the new public IDs to the main data frame
+gene_df_reversed <- gene_df_reversed %>%
+  mutate(
+    # Create a base name by removing the " (rev)" suffix for matching
+    base_molecule = str_remove(molecule, " \\(rev\\)"),
+    # Map the base name to the new public ID
+    plot_id_base = id_map[base_molecule],
+    # Conditionally add " (rev)" back if the original molecule was reversed
+    plot_id = ifelse(str_detect(molecule, " \\(rev\\)"),
+                     paste0(plot_id_base, " (rev)"),
+                     plot_id_base)
+  )
+
+# 3. Define the original order (as before)
 desired_molecule_order <- c(
-  "Aved_tig00303955-10-54120_vph", # cluster 1
-  "Damh_tig00014446-10-220150_vph", # cluster 2
-  "Damh_tig00046628-10-92530_vph (rev)",
   "Hade_tig00086668-10-71420_vph (rev)",
+  "Damh_tig00014446-10-220150_vph", # cluster 2
   "Lyne_tig00033829-10-240680_vph (rev)",
   "Lyne_tig00044463-10-176290_vph",
-  "Damh_tig00018526-10-141480_vph", # cluster 3
-  "Fred_tig00089364-10-137080_vph (rev)",
-  "AalE_tig00021708-10-192480_vph",
-  "Aved_tig00056523-10-134420_vph",
-  "Fred_tig00051270-10-161640_vph (rev)",
+  "Damh_tig00046628-10-92530_vph (rev)",
   "Lyne_tig00028020-10-249450_vph",
-  "Skiv_tig00138093-10-67990_vph (rev)",
   "Vibo_tig00073545-10-42870_vph",
-  "Viby_tig00043866-10-124870_vph (rev)"
-)
-gene_df_reversed$molecule <- factor(gene_df_reversed$molecule, levels = desired_molecule_order)
+  "AalE_tig00021708-10-192480_vph",
+  "Fred_tig00089364-10-137080_vph (rev)",
+  "Damh_tig00018526-10-141480_vph", # cluster 3
+  "Aved_tig00056523-10-134420_vph",
+  
 
+  "Fred_tig00051270-10-161640_vph (rev)",
+  "Skiv_tig00138093-10-67990_vph (rev)",
+  "Viby_tig00043866-10-124870_vph (rev)",
+  "Aved_tig00303955-10-54120_vph" # cluster 1
+)
+
+# 4. Create the corresponding order for the new public IDs
+base_order <- str_remove(desired_molecule_order, " \\(rev\\)")
+desired_plot_id_order_base <- id_map[base_order]
+desired_plot_id_order <- ifelse(str_detect(desired_molecule_order, " \\(rev\\)"),
+                                paste0(desired_plot_id_order_base, " (rev)"),
+                                desired_plot_id_order_base)
+
+# 5. Apply the new ordering to the plot_id column by making it a factor
+gene_df_reversed$plot_id <- factor(gene_df_reversed$plot_id, levels = desired_plot_id_order)
+
+
+# 6. Create dummies for nice alignment using the new plot_id
 dummies <- make_alignment_dummies(
-  gene_df_reversed %>% select(molecule, gene, start, end, annotation_short),
-  aes(xmin = start, xmax = end, y = molecule, id = annotation_short),
+  gene_df_reversed %>% select(plot_id, gene, start, end, annotation_short),
+  aes(xmin = start, xmax = end, y = plot_id, id = annotation_short),
   on = "Penton_1"
 )
 
-ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = annotation_short)) +
+
+# visualization of vphs ---------------------------------------------------
+ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = plot_id, fill = annotation_short)) +
   geom_gene_arrow(aes(forward = orientation), arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm"), size = 0.5) +
   geom_blank(data = dummies) +
-  facet_wrap(~ molecule, scales = "free", ncol = 1) +
+  facet_wrap(~ plot_id, scales = "free", ncol = 1) +
   scale_fill_manual(values = c(
-    # Top 6 most significant genes
-    MCP_1 = "#F28E2BFF",                   
-    `DNA Pol` = "#4E79A7FF",              
-    ATPase_1 = "#59A14FFF",                
-    Penton_1 = "#B6992DFF",                
-    `Integrase core domain` = "#499894FF", 
-    PRO_1 = "#E15759FF",
+    # vph only genes (core genes)
+    MCP_1 = "goldenrod1",
+    ATPase_1 = "#529985",
+    Penton_1 = "#689D72",
+    PRO_1 = "#9EB258",
     
-    # Other functional genes in shades of gray
-    `His-Me ENase` = "#D3D3D3",
-    `RNaseH-like sf` = "#D3D3D3",
-    `P-loop NTPase` = "#D3D3D3",
-    `SET domain` = "#D3D3D3",
-    `SGNH hydrolase` = "#D3D3D3",
-    `alpha/beta-Hydrolases` = "#D3D3D3",
-    `Concanavalin A-like lectins/glucanases` = "#D3D3D3",
-    other = "#D3D3D3",                   # Light gray for miscellaneous
+    # then vph only genes 
+    `Integrase core domain` = "#C26B51", 
+    `SET domain` = "#D78D50",
+    `SGNH hydrolase` = "#E5A94E",
+    `alpha/beta-Hydrolases` = "#E7C64A",
+    `Concanavalin A-like lectins/glucanases` = "#DEC895",
+    other = "white",                   # Light gray for miscellaneous
     
-    # Hypothetical genes
-    hypothetical = "white"               # White, with a black border often added in geom_*
-  ),
-  breaks = c(
-    "MCP_1",
-    "DNA Pol",
-    "ATPase_1",
-    "Penton_1",
-    "Integrase core domain",
-    "PRO_1",
-    "other",
-    "hypothetical"
+    # shared:
+    `DNA Pol` = "#333333",
+    `His-Me ENase` = "#666666",
+    `P-loop NTPase` = "#AAAAAA",
+    `RNaseH-like sf` = "#DDDDDD",
+    hypothetical = "white"
+    
+
   )) +
   theme_genes() +
   labs(y = "") +
@@ -328,12 +355,15 @@ ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = anno
     panel.grid.minor.x = element_blank(),  # Removes minor vertical grid lines
     axis.line.x = element_blank(),
     legend.title = element_blank(),
-    legend.position = "bottom",
+    legend.position = "none",
     axis.text.y = element_text(face = "bold")
   )
 
-ggsave(plot = last_plot(), file = "final/vph_genome_map.png", height = 4.5, width = 8)
-ggsave(plot = last_plot(), file = "final/vph_genome_map.svg", height = 4.5, width = 8)
+H = 4
+W = 7
+ggsave(plot = last_plot(), file = "final/vph_genome_map.png", height = H, width = W)
+ggsave(plot = last_plot(), file = "final/vph_genome_map.svg", height = H, width = W)
+ggsave(plot = last_plot(), file = "final/vph_genome_map.pdf", height = H, width = W)
 
 
 

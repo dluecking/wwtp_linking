@@ -257,62 +257,96 @@ for(seq in unique(gene_df_reversed$molecule)){
   }
 }
 
-# order needs to be set
-# this is sorted by subclusters on top (1, 2, 3, then singles)
+# 1. Create a mapping from long contig IDs to the new public IDs
+# !!! ACTION REQUIRED: Verify that 'contig_ID' and 'public_ID' are the correct column names in `plv_info` !!!
+id_map <- setNames(plv_info$public_ID, plv_info$contig)
+
+# 2. Add the new public IDs to the main data frame
+gene_df_reversed <- gene_df_reversed %>%
+  mutate(
+    # Create a base name by removing the " (rev)" suffix for matching
+    base_molecule = str_remove(molecule, " \\(rev\\)"),
+    # Map the base name to the new public ID
+    plot_id_base = id_map[base_molecule],
+    # Conditionally add " (rev)" back if the original molecule was reversed
+    plot_id = ifelse(str_detect(molecule, " \\(rev\\)"),
+                     paste0(plot_id_base, " (rev)"),
+                     plot_id_base)
+  )
+
+
+# 3. Define the original order (as before)
 desired_molecule_order <- c(
-  "AalW_tig00083928-10-131450_plv (rev)",
-  "Rand_tig00054083-10-84480_plv (rev)",
-  "Vibo_tig00019442-10-136670_plv (rev)",
+  "Ribe_tig00030249-10-170680_plv",
   "Bjer_tig00027726-10-154320_plv (rev)",
   "Mari_tig00039850-10-191400_plv (rev)",
-  "Ribe_tig00030249-10-170680_plv",
-  "Aved_tig00048883-10-193450_plv (rev)",
-  "Aved_tig00084897-10-150130_plv (rev)",
-  "Ejby_tig00023995-10-186920_plv (rev)",
-  "Lyne_tig00046032-10-146580_plv (rev)",
+  "Aved_tig00084897-10-150130_plv (rev)",  
   "Lyne_tig00060056-10-166770_plv",
-  "Rand_tig00055912-10-108660_plv",
+  "Lyne_tig00046032-10-146580_plv (rev)",
+  "Ejby_tig00023995-10-186920_plv (rev)",
+  "Aved_tig00048883-10-193450_plv (rev)",
+  "Vibo_tig00024931-10-107240_plv",
   "Rand_tig00813462-10-110980_plv",
-  "Vibo_tig00024931-10-107240_plv"
+  "Rand_tig00055912-10-108660_plv",
+  "Rand_tig00054083-10-84480_plv (rev)",
+  "Vibo_tig00019442-10-136670_plv (rev)",
+  "AalW_tig00083928-10-131450_plv (rev)"
+
 )
-gene_df_reversed$molecule <- factor(gene_df_reversed$molecule, levels = desired_molecule_order)
+
+# 4. Create the corresponding order for the new public IDs
+base_order <- str_remove(desired_molecule_order, " \\(rev\\)")
+desired_plot_id_order_base <- id_map[base_order]
+desired_plot_id_order <- ifelse(str_detect(desired_molecule_order, " \\(rev\\)"),
+                                paste0(desired_plot_id_order_base, " (rev)"),
+                                desired_plot_id_order_base)
+
+# 5. Apply the new ordering to the plot_id column by making it a factor
+gene_df_reversed$plot_id <- factor(gene_df_reversed$plot_id, levels = desired_plot_id_order)
 
 
-# create dummies for nice alignment
+# 6. Create dummies for nice alignment using the new plot_id
 dummies <- make_alignment_dummies(
-  gene_df_reversed %>% select(molecule, gene, start, end, annotation_short),
-  aes(xmin = start, xmax = end, y = molecule, id = annotation_short),
+  gene_df_reversed %>% select(plot_id, gene, start, end, annotation_short),
+  aes(xmin = start, xmax = end, y = plot_id, id = annotation_short),
   on = "MCP"
 )
 
-ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = molecule, fill = annotation_short)) +
-  geom_gene_arrow(aes(forward = orientation, arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm"), size = 0.5) +
+
+# 7. Use the new 'plot_id' column for the y-axis and faceting in the plot
+ggplot(gene_df_reversed, aes(xmin = start, xmax = end, y = plot_id, fill = annotation_short)) +
+  geom_gene_arrow(aes(forward = orientation), arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm"), size = 0.5) +
   geom_blank(data = dummies) +
-  facet_wrap(~ molecule, scales = "free", ncol = 1) +
+  facet_wrap(~ plot_id, scales = "free", ncol = 1) + # Use plot_id here
   scale_fill_manual(values = c(
-    MCP = "hotpink",            # Stays hotpink - distinct and vibrant
-    `DNA Pol` = "#E2D3CEFF",      # Deep, bold red - excellent for highlighted/important
-    A32 = "#DFC8CBFF",            # Soft, light blue - subtle, not highlighted
-    `GIY-YIG ENase` = "#CD9ABCFF", # Lighter, softer purple
-    `His-Me ENase` = "#C28AB1FF",  # Deeper, richer purple - clearly related, but distinct
-    `P-loop NTPase` = "#B980A7FF", # Warm, rich burnt orange
-    `RNaseH-like sf` = "#AC7299FF", # Deeper, more brownish-orange - clearly related, but distinct
-    hypothetical = "white"    # Very light grey, almost white - for background/hypothetical
+    # these are unique to PLVs
+    MCP = "hotpink",
+    A32 = "#EFA3E2",
+    `GIY-YIG ENase` = "#BA0497",
+    # these are shared
+    `DNA Pol` = "#333333",
+    `His-Me ENase` = "#666666",
+    `P-loop NTPase` = "#AAAAAA",
+    `RNaseH-like sf` = "#DDDDDD",
+    hypothetical = "white"
   )) +
   theme_genes() +
   labs(y = "") +
   theme(
-    axis.text.x = element_blank(),       # Removes the axis numbers/labels
-    axis.ticks.x = element_blank(),      # Removes the tick marks
-    axis.title.x = element_blank(),      # Removes the x-axis title (if any)
-    panel.grid.major.x = element_blank(), # Removes major vertical grid lines
-    panel.grid.minor.x = element_blank(),  # Removes minor vertical grid lines
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.title.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
     axis.line.x = element_blank(),
     legend.title = element_blank(),
-    legend.position = "bottom",
+    legend.position = "none",
     axis.text.y = element_text(face = "bold")
   )
 
-ggsave(plot = last_plot(), file = "final/plv_genome_map.png", height = 4.5, width = 8)
-ggsave(plot = last_plot(), file = "final/plv_genome_map.svg", height = 4.5, width = 8)
+H = 4
+W = 7
+ggsave(plot = last_plot(), file = "final/plv_genome_map.png", height = H, width = W)
+ggsave(plot = last_plot(), file = "final/plv_genome_map.svg", height = H, width = W)
+ggsave(plot = last_plot(), file = "final/plv_genome_map.pdf", height = H, width = W)
 
