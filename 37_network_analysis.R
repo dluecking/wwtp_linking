@@ -278,6 +278,7 @@ for(layer in c(unique(big_connection_df$type), "all")){
     ) +
     theme_cowplot() +
     theme(legend.position = "none") +
+    scale_x_discrete(labels = c("MC", "NCV", "PLV", "VPH")) +
     scale_fill_manual(values = c(
       vph = "goldenrod1",
       lc = "seagreen",
@@ -302,6 +303,7 @@ for(layer in c(unique(big_connection_df$type), "all")){
     ) +
     theme_cowplot() +
     theme(legend.position = "none") +
+    scale_x_discrete(labels = c("MC", "NCV", "PLV", "VPH")) +
     scale_fill_manual(values = c(
       vph = "goldenrod1",
       lc = "seagreen",
@@ -317,12 +319,26 @@ for(layer in c(unique(big_connection_df$type), "all")){
 # centrality Figure for maintext ------------------------------------------
 
 # THIS PART IS EXPLORATORY ##########
-SUBSAMPLE_SIZE <- 0.1
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
+SUBSAMPLE_SIZE <- 1
+edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
+edgelist_gene_sharing <- edgelist_gene_sharing %>% 
+  mutate(from_type = case_when(
+    str_ends(from, "lc")  ~ "lc",
+    str_ends(from, "vph") ~ "vph",
+    str_ends(from, "plv") ~ "plv",
+    TRUE ~ "gv"
+  )) %>% 
+  mutate(to_type = case_when(
+    str_ends(to, "lc")  ~ "lc",
+    str_ends(to, "vph") ~ "vph",
+    str_ends(to, "plv") ~ "plv",
+    TRUE ~ "gv"
+  ))
+
 big_connection_df <- edgelist_gene_sharing %>% select(from, to) %>% 
   mutate(type = "gene_sharing") %>% 
-  sample_n(size = nrow(big_connection_df) * SUBSAMPLE_SIZE)
-##################################
+  sample_n(size = nrow(edgelist_gene_sharing) * SUBSAMPLE_SIZE)
+
 
 
 g <- graph_from_data_frame(big_connection_df %>% filter(type == "gene_sharing"))
@@ -337,23 +353,45 @@ network_df <- left_join(deg_df, btw_df)
 network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
 
 # add the information: is the lc connected to a gv or not?
-for(i in 1:nrow(network_df)){
-  current_lc <- network_df$contig_id[i]
-  
-  # this only applies to LCs, skip if non-lc
-  if(!str_ends(current_lc, "\\_lc$")){
-    next
-  }
-  
-  # else check if we are connected to a GV though gene sharing
-  tmp_df <- edgelist_gene_sharing %>% 
-    filter(from == current_lc | to == current_lc)
-  
-  if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
-    network_df$contig_type[i] <- "lc_gv_connected"
-  }
-  
-}
+# for(i in 1:nrow(network_df)){
+#   if(i %% 100 == 0){
+#     print(i)
+#   }
+#   current_lc <- network_df$contig_id[i]
+#   
+#   # this only applies to LCs, skip if non-lc
+#   if(!str_ends(current_lc, "\\_lc$")){
+#     next
+#   }
+#   
+#   # else check if we are connected to a GV though gene sharing
+#   tmp_df <- edgelist_gene_sharing %>% 
+#     filter(from == current_lc | to == current_lc)
+#   
+#   if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
+#     network_df$contig_type[i] <- "lc_gv_connected"
+#   }
+#   
+# }
+
+# First find all LC contigs that are connected to a GV
+lc_gv_connected <- edgelist_gene_sharing %>%
+  filter(from_type == "gv" | to_type == "gv") %>%   # only GV edges
+  mutate(lc = case_when(
+    str_ends(from, "_lc") ~ from,
+    str_ends(to, "_lc")   ~ to,
+    TRUE ~ NA_character_
+  )) %>%
+  filter(!is.na(lc)) %>%
+  distinct(lc) %>%
+  pull(lc)
+
+# Update network_df$contig_type if contig_id is in that set
+network_df <- network_df %>%
+  mutate(contig_type = case_when(
+    str_ends(contig_id, "_lc") & contig_id %in% lc_gv_connected ~ "lc_gv_connected",
+    TRUE ~ contig_type
+  ))
 
 # set order of entities
 network_df$contig_type <- factor(network_df$contig_type,
@@ -376,7 +414,7 @@ deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_ty
         axis.text.y = element_text(size = 9),
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9),
         axis.title.x = element_blank()) +
-  scale_x_discrete(labels = c("MC", "MC (GV-connected)", "GV", "PLV", "VPH")) +
+  scale_x_discrete(labels = c("MC", "MC (NCV-connected)", "NCV", "PLV", "VPH")) +
   scale_fill_manual(values = c(
     vph = "goldenrod1",
     lc = "seagreen",
@@ -390,7 +428,7 @@ deg_plot
 bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = contig_type)) +
   geom_boxplot() +
   geom_signif(
-    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "gv")),
     map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
   scale_y_log10() +
   labs(
@@ -404,7 +442,7 @@ bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = conti
         axis.text.y = element_text(size = 9),
         axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, size = 9),
         axis.title.x = element_blank()) +
-  scale_x_discrete(labels = c("MC", "MC (GV-connected)", "GV", "PLV", "VPH")) +
+  scale_x_discrete(labels = c("MC", "MC (NCV-connected)", "NCV", "PLV", "VPH")) +
   scale_fill_manual(values = c(
     vph = "goldenrod1",
     lc = "seagreen",
