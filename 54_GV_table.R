@@ -16,13 +16,36 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 
 # # prep array stuff, do this once ------------------------------------------
+
+# this gives us CRISPR spacer info
 # c <- as.data.table(getName(read.fasta("intermediate/minced/minced_results_spacers_filtered_lc.fasta")))
 # c$contig <- str_remove(c$V1, "\\_CRISPR.*$")
 # 
 # a <- as.data.table(table(c$contig)) 
 # a <- a %>% 
 #   filter(!str_ends(V1, "\\_lc$"))
-# 
+
+
+# this is tRNA stuff
+tRNA_df <- data.table()
+
+for(file in list.files("intermediate/tRNA_prediction", full.names = TRUE)){
+  if (length(readLines(file)) > 2) {
+    tmp_df <- fread(file, skip = 2, header = F, sep = "\t")
+  } else {
+    next 
+  }
+  tmp_df$NCV <- str_remove(basename(file), "\\.trnas\\.txt$")
+  tmp_df$tRNA <- str_remove(str_extract(tmp_df$V1, "tRNA-[A-z]*"), "tRNA-")
+  tmp_df$start <- str_extract(tmp_df$V1, "(?<=\\[)\\d+")
+  tmp_df$end <- str_extract(tmp_df$V1, "\\d+(?=\\])")
+  tmp_df$anticodon <- str_extract(tmp_df$V3, "(?<=\\()[A-z]+(?=\\))")
+  tmp_df$intein <- str_extract(tmp_df$V3, "i\\(\\d+,\\d+\\)")
+  
+  tmp_df <- tmp_df %>% 
+    select(NCV, tRNA, start, end, anticodon, intein)
+  tRNA_df <- rbind(tRNA_df, tmp_df)
+}
 
 
 
@@ -36,19 +59,35 @@ gv_data <- read_sheet(sheet_url, sheet = "Final GVs overview")
 
 gv_data <- gv_data %>% 
   filter(completeness %in% c("complete", "likely complete")) %>% 
-  select(public_ID, sample, length, gc, personal_assessment_order, circular, completeness, ORFs, ncldv_hits, `tRNA (aragorn)`, padloc, crispr_array)
+  select(public_ID, shortname, sample, length, gc, personal_assessment_order, circular, completeness, ORFs, ncldv_hits, `tRNA (aragorn)`, padloc, crispr_array)
 
+
+# fill in tRNA data to gv_data
+gv_data$tRNA_list <- ""
+gv_data$tRNA <- 0
+
+for(i in 1:nrow(gv_data)){
+  tmp_df <- tRNA_df %>% 
+    filter(NCV == gv_data$shortname[i])
+  
+  if(nrow(tmp_df) == 0){
+    next
+  }
+  
+  gv_data$tRNA[i] <- nrow(tmp_df)
+  gv_data$tRNA_list[i] <- paste(unique(tmp_df$tRNA[tmp_df$tRNA != ""]), collapse = ", ")
+}
 
 
 # create table ------------------------------------------------------------
 # Corrected create table code with proper function order
 gv_table <- gv_data %>%
-  arrange(personal_assessment_order) %>%
+  arrange(personal_assessment_order, completeness, public_ID) %>%
   mutate(length_plot = length) %>%
   select(
     public_ID, personal_assessment_order, completeness,
-    length, length_plot, gc, ORFs, circular, ncldv_hits,
-    `tRNA (aragorn)`, padloc, crispr_array
+    length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, crispr_array,
+    tRNA, tRNA_list
   ) %>%
   gt() %>%
   
@@ -96,7 +135,8 @@ gv_table <- gv_data %>%
     ORFs = "ORFs",
     circular = "Circular",
     ncldv_hits = "Marker Genes",
-    `tRNA (aragorn)` = "tRNA sequences",
+    tRNA = "# tRNAs",
+    tRNA_list = "tRNA sequences",
     padloc = "Defensive System",
     crispr_array = "# CRISPR Spacers"
   ) %>%
@@ -111,6 +151,7 @@ gv_table <- gv_data %>%
     table.font.size = px(12),
     data_row.padding = px(3)
   )
+
 
 gv_table
 
