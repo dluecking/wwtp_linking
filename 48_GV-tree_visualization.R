@@ -128,9 +128,11 @@ aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_viru
 # midpoint rooting, only used once:
 midpoint_tree <- phangorn::midpoint(aster_tree)
 
-tree <- ggtree(aster_tree, layout = "fan", open.angle = 90)
+tree <- ggtree(aster_tree, layout = "fan", open.angle = 180)
 #  flip(41, 186) # this was supposed to flip the one clade where the flipping would help, but it fucks up the tree...
 
+# colors
+paletteer_d("dichromat::BluetoOrangeRed_14")
 
 tree %<+% tree_data + 
   # first order
@@ -139,14 +141,14 @@ tree %<+% tree_data +
              color = "black", offset = 0.02, size = 0.3) +
   scale_fill_manual(guide = guide_legend(title = "Order", ncol = 1),
                     values = c(
-                      "Yaravirales"     = "#1b9e77",  # teal
-                      "Asfuvirales"     = "#d95f02",  # orange
-                      "Pimascovirales"  = "#7570b3",  # purple
-                      "Pandoravirales"  = "#e7298a",  # magenta
-                      "Imitervirales"   = "#66a61e",  # green
-                      "Chitovirales"    = "#e6ab02",  # mustard
-                      "Proculvirales"   = "#a6761d",  # brown
-                      "Algavirales"     = "#1f78b4",  # blue
+                      "Yaravirales"     = "#007A99FF",  # teal
+                      "Asfuvirales"     = "#00AACCFF",  # orange
+                      "Pimascovirales"  = "#66F0FFFF",  # purple
+                      "Pandoravirales"  = "#CCFDFFFF",  # magenta
+                      "Imitervirales"   = "#D9AF98FF",  # green
+                      "Chitovirales"    = "#CC9B7AFF",  # mustard
+                      "Proculvirales"   = "#F2DACEFF",  # brown
+                      "Algavirales"     = "#662F00",  # blue
                       "unknown"         = "grey80"    # light grey
                     ),
                     na.translate = FALSE) +
@@ -156,10 +158,10 @@ tree %<+% tree_data +
              mapping = aes(y = tip_label, fill = completeness),
              color = "black", offset = 0.03, size = 0.3) +
   scale_fill_manual(
-    values = c("complete" = "steelblue", 
-               "likely complete" = "lightblue", 
-               "likely incomplete" = "#FFF4B5", 
-               "incomplete" = "#FFD7C4"),  
+    values = c("complete" = "#333333", 
+               "likely complete" = "#666666", 
+               "likely incomplete" = "#999999", 
+               "incomplete" = "#E5E5E5"),  
     na.translate = FALSE,  # suppress legend item and display for NA
     na.value = "white",
     guide = guide_legend(title = "Completeness")
@@ -211,16 +213,16 @@ ggsave(plot = last_plot(), file = "final/trees/GV_astral_w_references.svg", heig
 
 
 
-# stats on different nuphylo trees ----------------------------------------
-
-SINGLE_TREE_DIR <- list.dirs("intermediate/GV_tree/nuhpylo_output", recursive = FALSE)
-
-trees <- lapply(paste0(SINGLE_TREE_DIR, "/allseqs.nwk"), read.tree)
-names(trees) <- basename(SINGLE_TREE_DIR)
-
-library(TreeDist)
-
-kc_distances <- KendallColijn(trees)
+# # stats on different nuphylo trees ----------------------------------------
+# 
+# SINGLE_TREE_DIR <- list.dirs("intermediate/GV_tree/nuhpylo_output", recursive = FALSE)
+# 
+# trees <- lapply(paste0(SINGLE_TREE_DIR, "/allseqs.nwk"), read.tree)
+# names(trees) <- basename(SINGLE_TREE_DIR)
+# 
+# library(TreeDist)
+# 
+# kc_distances <- KendallColijn(trees)
 
 
 

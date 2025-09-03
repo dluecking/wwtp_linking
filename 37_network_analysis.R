@@ -52,7 +52,7 @@ contig_df <- contig_df %>%
 # load GV info
 sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474"
 GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
-  select(shortname, personal_assessment_order)
+  select(shortname, personal_assessment_order, public_ID)
 
 # load tax info
 lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
@@ -120,6 +120,10 @@ big_connection_df <- rbind(
 )
 
 
+# load crispr cas data ----------------------------------------------------
+
+crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv")
+crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
 # visualize a subcluster surrounding a specific node ----------------------
@@ -162,6 +166,36 @@ for(contig in gvs){
                               contig_type = "")
   small_node_df$contig_type <- contig_df$type[match(small_node_df$id, contig_df$contig_id)]
   
+  # public_ID needs to be added
+  small_node_df$public_ID <- small_node_df$id
+  small_node_df$public_ID[small_node_df$contig_type == "gv"] <- 
+    GV_info$public_ID[match(small_node_df$id[small_node_df$contig_type == "gv"], GV_info$shortname)]
+  
+  # CRISP info needs to be added
+  small_node_df$cas_genes <- ""
+  for(i in 1:nrow(small_node_df)){
+    # virophages get an NA
+    if(small_node_df$contig_type[i] == "vph"){
+      small_node_df$cas_genes[i] <- "Not applicable"
+      next
+    }
+    
+    # GVs and LCs get a concatenated unique list of cas genes found
+    tmp_df<- crispr_df %>% 
+      filter(contig_id == small_node_df$id[i])
+    
+    if(nrow(tmp_df) >= 1){
+      cas_genes <- tmp_df %>% 
+        select(annotation) %>% 
+        unlist() %>% 
+        unique() %>% 
+        paste(collapse = ", ")
+    }else{
+      cas_genes <- "None detected."
+    }
+    small_node_df$cas_genes[i] <- cas_genes
+  }
+  
   # then subset the big df, so we retain only edges of nodes that are part of the 
   # group
   small_edge_df <- big_connection_df %>%
@@ -174,7 +208,6 @@ for(contig in gvs){
   E(g)$edge_type <- as.factor(E(g)$type)
   
   
-  
   g <- as_tbl_graph(g)
   
   layout <- create_layout(g, layout = "fr")
@@ -185,10 +218,11 @@ for(contig in gvs){
                            aes(x = x, 
                                y = y, 
                                color = node_type,
-                               data_id = name,
-                               tooltip = paste("Node ID:", name,
+                               data_id = public_ID,
+                               tooltip = paste("Node ID:", public_ID,
                                                "\nType:", node_type,
-                                               "\nTaxonomy:", tax_info))) +
+                                               "\nTaxonomy:", tax_info,
+                                               "\nCas genes: ", cas_genes))) +
     scale_color_manual(values = c(
       vph = "goldenrod1",
       lc = "seagreen",

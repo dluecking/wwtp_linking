@@ -48,6 +48,11 @@ for(file in list.files("intermediate/tRNA_prediction", full.names = TRUE)){
 }
 
 
+# load crispr cas data ----------------------------------------------------
+
+crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv")
+crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
+
 
 # load general data -------------------------------------------------------
 
@@ -60,6 +65,25 @@ gv_data <- read_sheet(sheet_url, sheet = "Final GVs overview")
 gv_data <- gv_data %>% 
   filter(completeness %in% c("complete", "likely complete")) %>% 
   select(public_ID, shortname, sample, length, gc, personal_assessment_order, circular, completeness, ORFs, ncldv_hits, `tRNA (aragorn)`, padloc, crispr_array)
+
+# fill in CRISPR data
+gv_data$crispr_cas <- ""
+for(i in 1:nrow(gv_data)){
+  tmp_df <- crispr_df %>% 
+    filter(contig_id == gv_data$shortname[i])
+  
+  if(nrow(tmp_df) >= 1){
+    cas_genes <- tmp_df %>% 
+      select(annotation) %>% 
+      unlist() %>% 
+      unique() %>% 
+      paste(collapse = ", ")
+  }else{
+    cas_genes <- "-"
+  }
+  gv_data$crispr_cas[i] <- cas_genes
+}
+
 
 
 # fill in tRNA data to gv_data
@@ -86,7 +110,8 @@ gv_table <- gv_data %>%
   mutate(length_plot = length) %>%
   select(
     public_ID, personal_assessment_order, completeness,
-    length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, crispr_array,
+    length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, 
+    crispr_array, crispr_cas,
     tRNA, tRNA_list
   ) %>%
   gt() %>%
@@ -98,6 +123,12 @@ gv_table <- gv_data %>%
   cols_move(
     columns = length_plot,
     after = length
+  ) %>%
+  
+  # move the crispr cas after the cas array
+  cols_move(
+    columns = crispr_cas,
+    after = crispr_array
   ) %>%
   
   data_color(
@@ -133,12 +164,13 @@ gv_table <- gv_data %>%
     length_plot = "Length (plot)",
     gc = "GC-content (%)",
     ORFs = "ORFs",
-    circular = "Circular",
+    circular = "Topology",
     ncldv_hits = "Marker Genes",
     tRNA = "# tRNAs",
     tRNA_list = "tRNA sequences",
     padloc = "Defensive System",
-    crispr_array = "# CRISPR Spacers"
+    crispr_array = "# CRISPR Spacers",
+    crispr_cas = "CRISPR-Cas Genes"
   ) %>%
   
   fmt_missing(columns = everything(), missing_text = "-") %>%

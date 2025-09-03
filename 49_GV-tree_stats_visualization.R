@@ -44,12 +44,12 @@ p1 <- ggplot(gv_data, aes(x = personal_assessment_order, y = length, fill = pers
   scale_fill_manual(
     name = "Category",
     values = c(
-      "Yaravirales" = "#1b9e77",
-      "Asfuvirales" = "#d95f02",
-      "Imitervirales" = "#66a61e",
-      "Pandoravirales" = "#e7298a",
-      "Pimascovirales" = "#7570b3",
-      "unknown" = "grey"
+      "Yaravirales" = "#007A99FF",
+      "Asfuvirales" = "#00AACCFF",
+      "Imitervirales" = "#D9AF98FF",
+      "Pandoravirales" = "#CCFDFFFF",
+      "Pimascovirales" = "#66F0FFFF",
+      "unknown" = "grey80"
     )
   ) +
   scale_y_continuous(labels = scales::scientific)
@@ -66,12 +66,12 @@ p2 <- ggplot(gv_data, aes(x = personal_assessment_order, y = gc, fill = personal
   scale_fill_manual(
     name = "Category",
     values = c(
-      "Yaravirales" = "#1b9e77",
-      "Asfuvirales" = "#d95f02",
-      "Imitervirales" = "#66a61e",
-      "Pandoravirales" = "#e7298a",
-      "Pimascovirales" = "#7570b3",
-      "unknown" = "grey"
+      "Yaravirales" = "#007A99FF",
+      "Asfuvirales" = "#00AACCFF",
+      "Imitervirales" = "#D9AF98FF",
+      "Pandoravirales" = "#CCFDFFFF",
+      "Pimascovirales" = "#66F0FFFF",
+      "unknown" = "grey80"
     )
   )
 
@@ -100,12 +100,12 @@ p3 <- ggplot(gv_data, aes(x = personal_assessment_order, y = ORFan_perc, fill = 
   scale_fill_manual(
     name = "Category",
     values = c(
-      "Yaravirales" = "#1b9e77",
-      "Asfuvirales" = "#d95f02",
-      "Imitervirales" = "#66a61e",
-      "Pandoravirales" = "#e7298a",
-      "Pimascovirales" = "#7570b3",
-      "unknown" = "grey"
+      "Yaravirales" = "#007A99FF",
+      "Asfuvirales" = "#00AACCFF",
+      "Imitervirales" = "#D9AF98FF",
+      "Pandoravirales" = "#CCFDFFFF",
+      "Pimascovirales" = "#66F0FFFF",
+      "unknown" = "grey80"
     )
   ) +
   ylim(c(33, 100))
