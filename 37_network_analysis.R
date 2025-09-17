@@ -185,7 +185,7 @@ for(contig in gvs){
       filter(contig_id == small_node_df$id[i])
     
     if(nrow(tmp_df) >= 1){
-      cas_genes <- tmp_df %>% 
+       cas_genes <- tmp_df %>% 
         select(annotation) %>% 
         unlist() %>% 
         unique() %>% 
