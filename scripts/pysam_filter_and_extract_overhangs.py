@@ -71,7 +71,6 @@ def extract_overhangs(input_bam, fasta_output_dir, bam_output_dir):
     total_processed_reads_count = 0
 
     # Iterate over each read in the BAM file
-    # Using 'until_eof=True' ensures iteration over the entire file
     # and handles unsorted BAMs without requiring an index for full iteration.
     for read in bamfile.fetch(until_eof=True):
         read_id = read.query_name

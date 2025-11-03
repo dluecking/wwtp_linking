@@ -132,11 +132,14 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 CONTIG_OF_INTEREST <- "Vibo_2_3_4"
 SAVE_PLOT <- TRUE
 
-# plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
-# vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
+plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
+vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
 gvs <- GV_info$shortname
 
-for(contig in gvs){
+list_of_sequences_to_print <- gvs
+
+
+for(contig in list_of_sequences_to_print){
   CONTIG_OF_INTEREST <- contig
   # get a list of ids that are part of the specific subcluster
   # this first retains only connections which are of a specific type (e.g. "gene_sharing")
@@ -257,15 +260,29 @@ for(contig in gvs){
   interactive_plot <- girafe(ggobj = ggiraph_plot)
   
   if(SAVE_PLOT){
+    type_of_contig <- str_remove(contig, "^.*\\_")
+    
+    if(type_of_contig == "plv" || type_of_contig == "vph"){
+      FILE_BASE <- paste0("final/plv_vph_subclusters/", CONTIG_OF_INTEREST) 
+    }else{
+      FILE_BASE <- paste0("final/gv_subclusters/", CONTIG_OF_INTEREST)
+    }
+    
     # in case you want to save
     # for ggsave this is a bit more complicated, since we need to adjust the width and height:
     FACETS <- length(unique(small_edge_df$type))
     HEIGHT_FACTOR <- ceiling(FACETS / 3)
     
     ggsave(ggiraph_plot + theme(legend.position = "none"), 
-           file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, ".svg"), 
+           file = paste0(FILE_BASE, ".svg"), 
            width = 4.5, height = 1.8*HEIGHT_FACTOR)
-    htmltools::save_html(interactive_plot, file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, "_interactive.html"))
+    ggsave(ggiraph_plot + theme(legend.position = "none"), 
+           file = paste0(FILE_BASE, ".pdf"), 
+           width = 4.5, height = 1.8*HEIGHT_FACTOR)
+    ggsave(ggiraph_plot + theme(legend.position = "none"), 
+           file = paste0(FILE_BASE, ".png"), 
+           width = 4.5, height = 1.8*HEIGHT_FACTOR)
+    htmltools::save_html(interactive_plot, file = paste0(FILE_BASE, "_interactive.html"))
   }
 }
 
