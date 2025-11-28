@@ -129,14 +129,14 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 # visualize a subcluster surrounding a specific node ----------------------
 
 # CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
-CONTIG_OF_INTEREST <- "Vibo_2_3_4"
+# CONTIG_OF_INTEREST <- "Vibo_2_3_4"
 SAVE_PLOT <- TRUE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
 vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- gvs
+list_of_sequences_to_print <- plvs
 
 
 for(contig in list_of_sequences_to_print){
@@ -188,7 +188,7 @@ for(contig in list_of_sequences_to_print){
       filter(contig_id == small_node_df$id[i])
     
     if(nrow(tmp_df) >= 1){
-       cas_genes <- tmp_df %>% 
+      cas_genes <- tmp_df %>% 
         select(annotation) %>% 
         unlist() %>% 
         unique() %>% 
@@ -213,25 +213,49 @@ for(contig in list_of_sequences_to_print){
   
   g <- as_tbl_graph(g)
   
+  # CHANGE HERE!
+  g <- g %>%
+    activate(nodes) %>%
+    mutate(is_focal = (name == CONTIG_OF_INTEREST))
+  
+  
   layout <- create_layout(g, layout = "fr")
   ggiraph_plot <- ggraph(layout) +
     geom_edge_link(aes(color = type), show.legend = F) +
-    geom_point_interactive(size = 3,
-                           alpha = 0.8,
+    geom_point_interactive(shape = 21,
                            aes(x = x, 
-                               y = y, 
-                               color = node_type,
+                               y = y,
+                               size = if_else(is_focal, 4, 4),
+                               alpha = if_else(is_focal, 1, 0.8),   
+                               fill = node_type,
                                data_id = public_ID,
                                tooltip = paste("Node ID:", public_ID,
                                                "\nType:", node_type,
                                                "\nTaxonomy:", tax_info,
-                                               "\nCas genes: ", cas_genes))) +
-    scale_color_manual(values = c(
+                                               "\nCas genes: ", cas_genes),
+                               color = if_else(is_focal, "black", "white"),   # black border for focal node, none for others
+                               stroke = if_else(is_focal, 1, 0)
+                               
+                           )) +
+    scale_fill_manual(values = c(
       vph = "goldenrod1",
       lc = "seagreen",
       plv = "hotpink",
       gv = "steelblue"
-    )) +
+    ),
+    labels = c(
+      vph = "VPH",
+      lc = "MC",
+      plv = "PLV",
+      gv = "NCV"
+    ),
+    name = "Node Type") +
+    guides(fill = guide_legend(
+      override.aes = list(size = 4)  # increase legend point size
+    ))+
+    scale_size_identity() +
+    scale_alpha_identity() +
+    scale_color_identity() +
     facet_edges(~edge_type, ncol = 3, labeller = labeller(
       edge_type = c(
         "gene_sharing" = "Gene Sharing",
@@ -258,6 +282,8 @@ for(contig in list_of_sequences_to_print){
     )
   
   interactive_plot <- girafe(ggobj = ggiraph_plot)
+  interactive_plot
+  
   
   if(SAVE_PLOT){
     type_of_contig <- str_remove(contig, "^.*\\_")
