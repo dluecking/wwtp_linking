@@ -52,7 +52,17 @@ contig_df <- contig_df %>%
 # load GV info
 sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474"
 GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
-  select(shortname, personal_assessment_order, public_ID)
+  select(shortname, personal_assessment_order, public_ID) %>% 
+  drop_na(shortname)
+
+# load other info
+sheet_url <- "https://docs.google.com/spreadsheets/d/1CnqcfhOfS0rVBU6mvyCKrm50BmxJjVvif47f9vkQZgU/edit?gid=836958150#gid=836958150"
+vph_info <- read_sheet(sheet_url, sheet = "Table S3") %>% 
+  select(contig_ID, public_ID)
+plv_info <- read_sheet(sheet_url, sheet = "Table S4") %>% 
+  select(contig_ID, public_ID)
+vph_plv_combined_info <- rbind(vph_info, plv_info)
+
 
 # load tax info
 lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
@@ -136,7 +146,7 @@ plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
 vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- plvs
+list_of_sequences_to_print <- vphs
 
 
 for(contig in list_of_sequences_to_print){
@@ -289,9 +299,11 @@ for(contig in list_of_sequences_to_print){
     type_of_contig <- str_remove(contig, "^.*\\_")
     
     if(type_of_contig == "plv" || type_of_contig == "vph"){
-      FILE_BASE <- paste0("final/plv_vph_subclusters/", CONTIG_OF_INTEREST) 
+      public_ID <- vph_plv_combined_info$public_ID[vph_plv_combined_info$contig_ID == CONTIG_OF_INTEREST]
+      FILE_BASE <- paste0("final/plv_vph_subclusters/", public_ID) 
     }else{
-      FILE_BASE <- paste0("final/gv_subclusters/", CONTIG_OF_INTEREST)
+      public_ID <- GV_info$public_ID[GV_info$shortname == CONTIG_OF_INTEREST]
+      FILE_BASE <- paste0("final/gv_subclusters/", public_ID)
     }
     
     # in case you want to save
@@ -390,6 +402,8 @@ for(layer in c(unique(big_connection_df$type), "all")){
   
   p <- deg_plot + bet_plot
   ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.png"), width = 7, height = 4)
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.pdf"), width = 7, height = 4)
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.svg"), width = 7, height = 4)
 }
 
 
