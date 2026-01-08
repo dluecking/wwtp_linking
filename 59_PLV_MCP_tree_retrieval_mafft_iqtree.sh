@@ -1,7 +1,6 @@
 #!/bin/bash
-module load conda
-module load mafft
-module load iqtree
+module load MAFFT/7.526-GCC-13.3.0-with-extensions
+module load IQ-TREE/2.4.0
 
 # Filter sequences containing "_plv_" in the header
 grep -A 1 "_plv_" intermediate/proteins/all_public_and_my_own_MCP_proteins.faa > intermediate/treebuilding/plv_tree/PLV_MCP_proteins.faa

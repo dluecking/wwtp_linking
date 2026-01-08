@@ -8,6 +8,6 @@
 #SBATCH --mem=16G
 
 
-module load iqtree
+module load IQ-TREE/2.4.0
 
 iqtree2 -T 8 -s intermediate/treebuilding/all_public_and_my_own_MCP_proteins_cleaned.aln -B 1000

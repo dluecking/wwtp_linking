@@ -139,8 +139,8 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 # visualize a subcluster surrounding a specific node ----------------------
 
 # CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
-# CONTIG_OF_INTEREST <- "Vibo_2_3_4"
-SAVE_PLOT <- TRUE
+CONTIG_OF_INTEREST <- "Bjer_2_3"
+SAVE_PLOT <- FALSE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
 vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
@@ -229,7 +229,7 @@ for(contig in list_of_sequences_to_print){
     mutate(is_focal = (name == CONTIG_OF_INTEREST))
   
   
-  layout <- create_layout(g, layout = "fr")
+  # layout <- create_layout(g, layout = "fr")
   ggiraph_plot <- ggraph(layout) +
     geom_edge_link(aes(color = type), show.legend = F) +
     geom_point_interactive(shape = 21,

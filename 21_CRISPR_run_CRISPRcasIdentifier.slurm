@@ -8,8 +8,8 @@
 #SBATCH --mem=16G              # Request more memory, especially for larger input files
 #SBATCH --time=16:00:00        # Set a reasonable time limit (e.g., 4 hours)
 
-module load conda
-conda activate crispr-env 
+module load Conda
+conda activate crispr-env
 
 # --- Define paths ---
 CRISPRCASID_BIN="/lisc/home/user/luecking/bin/CRISPRcasIdentifier-1.1.0/CRISPRcasIdentifier.py"

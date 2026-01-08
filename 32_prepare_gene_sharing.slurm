@@ -7,8 +7,8 @@
 #SBATCH --time=05:00:00     
 #SBATCH --mem=256G             
 
-module load conda
-conda activate R_new
+module load Conda
+conda activate R
 
 Rscript scripts/prepare_gene_sharing.R 
 

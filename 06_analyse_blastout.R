@@ -22,32 +22,33 @@ blast_out <- fread("intermediate/blast_results/query_vs_gv_contigs_megablast.tsv
 
 # Filter and process hits -------------------------------------------------
 
-final_table_of_hits <- blast_out %>%
-  as_tibble() %>% # Convert to tibble for consistent dplyr behavior
+# this one is better, but not implemented yet:
+final_table_of_hits <- blast_out_NEW %>%
+  as_tibble() %>%
   mutate(
     pident = as.numeric(pident),
     qlen = as.numeric(qlen),
-    length = as.numeric(length),
-    qcov_hsp_perc = (length / qlen) * 100 # Calculate query coverage
+    length = as.numeric(length)
   ) %>%
+  # GROUP BY QUERY: This is the critical missing step
+  group_by(qseqid, sseqid) %>%
+  summarise(
+    total_alignment_length = sum(length),
+    query_length = first(qlen),
+    subject_length = first(slen),
+    # We take the mean or max identity of the segments
+    avg_identity = mean(pident),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    total_query_coverage = (total_alignment_length / query_length) * 100
+  ) %>%
+  # Now you can filter effectively
   filter(
-    pident > 90, # Identity greater than 90%
-    qcov_hsp_perc > 90, # Query coverage greater than 90%
-    qseqid != sseqid # Exclude self-hits
-  ) %>%
-  select(
-    query_contig_id = qseqid,
-    gv_contig_id = sseqid,
-    percent_identity = pident,
-    query_coverage_percent = qcov_hsp_perc,
-    evalue,
-    bitscore,
-    alignment_length = length,
-    query_length = qlen,
-    subject_length = slen
+    avg_identity > 90,
+    total_query_coverage > 90
   )
-
 
 # save to helperfile ------------------------------------------------------
 
-fwrite(final_table_of_hits %>% select(query_contig_id), "helperfiles/contigs_to_remove_since_matching_GVs.txt", col.names = F)
+fwrite(final_table_of_hits %>% select(qseqid), "helperfiles/contigs_to_remove_since_matching_GVs.txt", col.names = F)

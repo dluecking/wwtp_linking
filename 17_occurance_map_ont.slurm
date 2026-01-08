@@ -10,9 +10,9 @@
 
 
 # load modules
-module load minimap2
-module load bedtools
-module load samtools
+module load Bowtie2/2.5.4-GCC-13.3.0
+module load SAMtools/1.23-GCC-14.2.0
+module load BEDTools/2.31.1-GCC-13.3.0
 
 # inputs
 REF_FILE="intermediate/contigs/all_contigs.fna"

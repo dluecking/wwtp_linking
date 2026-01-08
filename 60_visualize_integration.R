@@ -38,7 +38,7 @@ blast_out8080 <- blast_out %>% filter(pident >= 80, qcov >= 80)
 
 # data wrangling ----------------------------------------------------------
 
-# GV_OF_INTEREST <- "Vibo_2_3_4"
+GV_OF_INTEREST <- "Vibo_2_3_4"
 # GV_OF_INTEREST <- "Hjor_1"
 # GV_OF_INTEREST <- "Bjer_2_3"
 # GV_OF_INTEREST <- "OdNE_1"
@@ -60,7 +60,7 @@ for(GV_OF_INTEREST in c("Vibo_2_3_4", "Hjor_1", "Bjer_2_3", "OdNE_1", "Hjor_2_3_
     select(qseqid, sseqid, mapped_to, sstart, send, slen, read_type)
   
   # how many top matching contigs do we want to keep?
-  N = 5
+  N = 1
   
   
   # keep only the 8 most frequent sseqids
@@ -114,5 +114,24 @@ for(GV_OF_INTEREST in c("Vibo_2_3_4", "Hjor_1", "Bjer_2_3", "OdNE_1", "Hjor_2_3_
   
   ggsave(file = paste0("final/integration_plots/", GV_OF_INTEREST, "integration_plot.png"), 
          plot = last_plot(),
-         height = 6, width = 6)
+         height = 3, width = 6)
 }
+
+
+
+
+# quick exploratory thing -------------------------------------------------
+# we need to vis the starting positions of vibo_middle reads on vibo
+pos <- fread("testing/vibo_middle_read_positions_on_vibo.txt")
+
+ggplot(pos, aes(x = V2)) +
+  geom_rug(alpha = 0.4) +
+  geom_histogram(aes(y = after_stat(count)), bins = 200, alpha = 0.8, color = "black") +
+  scale_x_continuous(limits = c(0, 140000), name = "Position on contig (zoomed)") +
+  ylab("Count / rug ticks") +
+  ggtitle("Read mapping positions on Vibo_2_3_4") +
+  theme_bw()
+
+ggsave(file = paste0("final/integration_plots/vibo_middle_read_positions_on_vibo.png"), 
+       plot = last_plot(),
+       height = 3, width = 6)

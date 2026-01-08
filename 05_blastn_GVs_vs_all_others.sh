@@ -3,9 +3,14 @@
 #SBATCH --output=log/blast_contig_overlap_%A.out
 #SBATCH --error=log/blast_contig_overlap_%A.err
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16 # Adjust based on available cores and desired speed
-#SBATCH --time=4:00:00 # Adjust time based on data size
-#SBATCH --mem=32G # Adjust memory based on database and query size. BLAST can be memory intensive.
+#SBATCH --cpus-per-task=16 
+#SBATCH --time=4:00:00 
+#SBATCH --mem=32G 
+
+# --- Load necessary tools ---
+module load BLAST+/2.17.0-gompi-2024a
+module load Conda
+conda activate bioinf
 
 # --- Configuration ---
 GV_CONTIGS_DIR="data/gv_contigs/"
@@ -22,11 +27,6 @@ QUERY_COMBINED_FASTA="${BLAST_DB_DIR}query_contigs_for_blast.fna"
 MIN_PERCENT_IDENTITY=95
 # Minimum query coverage (e.g., 80% of query length must align)
 MIN_QUERY_COVERAGE=80
-
-# --- Load necessary tools ---
-module load ncbiblastplus
-module load conda
-conda activate bioinf # Ensure blast+ (makeblastdb, blastn) is in this environment
 
 echo "Starting BLAST comparison for contig overlap..."
 echo "GV Contigs directory: ${GV_CONTIGS_DIR}"
@@ -45,18 +45,9 @@ echo "Step A: Combining GV contigs and creating BLAST database..."
 # Combine all .fna files from GV_CONTIGS_DIR into a single FASTA for the database
 find "${GV_CONTIGS_DIR}" -name "*.fasta" -print0 | xargs -0 cat > "${GV_COMBINED_FASTA}"
 
-if [ ! -s "${GV_COMBINED_FASTA}" ]; then
-    echo "ERROR: No .fasta files found in ${GV_CONTIGS_DIR} or combined FASTA is empty. Exiting."
-    exit 1
-fi
-
 # Create the BLAST database
 makeblastdb -in "${GV_COMBINED_FASTA}" -dbtype nucl -out "${BLAST_DB_DIR}gv_contigs_db" -parse_seqids
 
-if [ $? -ne 0 ]; then
-    echo "ERROR: makeblastdb failed. Exiting."
-    exit 1
-fi
 echo "BLAST database created: ${BLAST_DB_DIR}gv_contigs_db"
 echo "---"
 
@@ -68,11 +59,6 @@ find "${QUERY_CONTIGS_BASE_DIR}" -type d -name "vph" -o -name "lc" -o -name "plv
 while read -r subdir; do
     find "${subdir}" -name "*.fna" -print0
 done | xargs -0 cat > "${QUERY_COMBINED_FASTA}"
-
-if [ ! -s "${QUERY_COMBINED_FASTA}" ]; then
-    echo "ERROR: No .fna files found in ${QUERY_CONTIGS_BASE_DIR}{vph,lc,plv} or combined query FASTA is empty. Exiting."
-    exit 1
-fi
 
 # Define the output file for BLAST results
 BLAST_RESULTS_FILE="${BLAST_OUTPUT_DIR}query_vs_gv_contigs_megablast.tsv"
@@ -87,10 +73,5 @@ blastn -query "${QUERY_COMBINED_FASTA}" \
        -perc_identity "${MIN_PERCENT_IDENTITY}" \
        -qcov_hsp_perc "${MIN_QUERY_COVERAGE}" \
        -max_target_seqs 1000 # Limit hits per query; adjust if you expect more relevant matches
-
-if [ $? -ne 0 ]; then
-    echo "ERROR: blastn failed. Check BLAST output for details."
-    exit 1
-fi
 
 echo "BLASTN comparison complete. Results saved to: ${BLAST_RESULTS_FILE}"

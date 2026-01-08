@@ -2,7 +2,7 @@
 
 # === Step 1: Set up environment ===
 echo "🔹 Loading required modules and activating 'nuphylo' Conda environment"
-module load conda
+module load Conda
 conda activate nuphylo
 
 # Define paths

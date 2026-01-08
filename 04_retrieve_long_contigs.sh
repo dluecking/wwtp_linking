@@ -10,10 +10,10 @@
 # --- Configuration ---
 ASSEMBLY_DIR="data/assemblies/"
 OUTPUT_DIR="intermediate/contigs/lc/"
-MIN_LENGTH=100000 # SET YOUR MINIMUM LENGTH (X) HERE
+MIN_LENGTH=100000
 
 # --- Load tools ---
-module load conda
+module load Conda
 conda activate bioinf # Ensure seqkit is in this environment
 
 # Create output directory

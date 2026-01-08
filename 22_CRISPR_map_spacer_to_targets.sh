@@ -1,6 +1,6 @@
 #!/bin/bash
-module load conda
-conda activate spacerextractor
+module load Conda
+conda activate spacerextractor-0.9.8
 
 TARGET_FILE="intermediate/contigs/combined_gv_plv_vph.fna"
 TARGET_DB="intermediate/CRISPR/map_spacers_to_targets/target_db"

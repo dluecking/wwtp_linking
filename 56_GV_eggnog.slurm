@@ -10,7 +10,7 @@
 #SBATCH --array=1-63 # up to 63
 
 # Load necessary modules
-module load conda
+module load Conda
 conda activate eggnog-mapper-2.1.13
 
 

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-module load conda
+module load Conda
 conda activate aster
 
 # concat the nuphylo trees

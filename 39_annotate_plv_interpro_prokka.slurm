@@ -20,7 +20,7 @@ echo "Cleaning ${protein_file} to remove asterisks"
 sed 's/\*//g' intermediate/proteins/plv/${protein_file} > intermediate/proteins/cleaned/plv/${protein_file}
 
 ########## INTERPROSCAN ##########
-module load interproscan
+module load InterProScan/5.76-107.0-GCC-13.3.0
 
 echo "Running InterProScan for ${protein_file}"
 mkdir -p intermediate/annotations/interpro/plv
@@ -30,8 +30,9 @@ interproscan.sh \
   --cpu 4
 
 ########## PROKKA ##########
-module load conda
-conda activate prokka
+module load Conda
+conda activate Prokka-1.15.6
+
 
 echo "Running Prokka for ${contig_file}"
 mkdir -p intermediate/annotations/prokka/plv

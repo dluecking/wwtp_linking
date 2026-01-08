@@ -9,7 +9,7 @@
 #SBATCH --mem=64G         # AMOUNT OF RAM YOU NEED (good number: 8GB for small jobs, 64GB for medium jobs, 256+GB for assemblies)
 
 # load your modules here, e.g.:
-module load hmmer
+module load HMMER/3.4-gompi-2024a
 echo "loaded modules"
 
 # get protein file

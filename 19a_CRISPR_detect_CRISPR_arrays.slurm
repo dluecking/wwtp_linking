@@ -8,8 +8,8 @@
 #SBATCH --mem=16G
 #SBATCH --time=03:00:00
 
-module load conda
-conda activate minced 
+module load Conda
+conda activate minced-0.4.2
 
 # Define input and output directories
 INPUT_CONTIGS="intermediate/contigs/all_contigs.fna"

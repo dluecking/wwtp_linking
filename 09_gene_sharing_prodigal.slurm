@@ -8,8 +8,7 @@
 #SBATCH --mem=16G # Adjust memory as needed for sequential processing of files
 
 # --- Load Modules ---
-module load prodigal
-
+module load prodigal/2.6.3-GCCcore-13.3.0
 
 echo "Starting Prodigal protein prediction using four distinct loops..."
 echo "---"

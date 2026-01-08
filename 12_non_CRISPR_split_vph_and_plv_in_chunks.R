@@ -11,8 +11,6 @@ library(stringr)
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-
-
 # CONSTANTS
 WINDOW <- 40
 SLIDING <- 10
