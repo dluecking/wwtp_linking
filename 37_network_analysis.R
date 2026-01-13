@@ -326,6 +326,37 @@ for(contig in list_of_sequences_to_print){
 
 
 
+# check scale free and other stats ----------------------------------------
+
+# 1. Generate the data
+d <- degree(g)
+# Create a frequency table and calculate the cumulative probability
+degree_counts <- as.data.frame(table(d))
+names(degree_counts) <- c("k", "Freq")
+degree_counts$k <- as.numeric(as.character(degree_counts$k))
+
+# Sort and calculate cumulative distribution P(X >= k)
+degree_counts <- degree_counts[order(degree_counts$k, decreasing = TRUE), ]
+degree_counts$cumulative_prob <- cumsum(degree_counts$Freq) / sum(degree_counts$Freq)
+
+# 2. Plot with ggplot2
+ggplot(degree_counts, aes(x = k, y = cumulative_prob)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  annotation_logticks() + # Adds the visual "rug" lines for log scales
+  labs(
+    title = "Log-Log Degree Distribution",
+    subtitle = "Check for linearity to identify scale-free properties",
+    x = "Degree (k)",
+    y = "Cumulative Probability P(k)"
+  ) +
+  theme_minimal()
+
+
+
+
+
 
 
 # centrality --------------------------------------------------------------
