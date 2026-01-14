@@ -1,6 +1,6 @@
 #!/bin/bash
 {
-  module load conda
+  module load Conda
   conda activate bioinf
 
   for line in $(cat helperfiles/list_of_samples.txt); do

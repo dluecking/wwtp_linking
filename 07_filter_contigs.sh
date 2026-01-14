@@ -1,6 +1,5 @@
 #!/bin/bash
-
-module load conda
+module load Conda
 conda activate bioinf
 
 

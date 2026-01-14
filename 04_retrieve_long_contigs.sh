@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=filter_contigs_by_len
-#SBATCH --output=log/filter_contigs_by_len_%A.out
-#SBATCH --error=log/filter_contigs_by_len_%A.err
+#SBATCH --output=log/04_filter_contigs_by_len_%A.out
+#SBATCH --error=log/04_filter_contigs_by_len_%A.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=2:00:00
@@ -10,10 +10,10 @@
 # --- Configuration ---
 ASSEMBLY_DIR="data/assemblies/"
 OUTPUT_DIR="intermediate/contigs/lc/"
-MIN_LENGTH=100000 # SET YOUR MINIMUM LENGTH (X) HERE
+MIN_LENGTH=100000 # Min length of contigs to retain
 
 # --- Load tools ---
-module load conda
+module load Conda
 conda activate bioinf # Ensure seqkit is in this environment
 
 # Create output directory

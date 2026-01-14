@@ -13,7 +13,7 @@ ASSEMBLY_DIR="data/assemblies/"
 BASE_OUTPUT_DIR="intermediate/contigs/" # Base directory for all retrieved contigs
 
 # --- Load necessary tools ---
-module load conda        # Load the conda module if your system uses it
+module load Conda        # Load the conda module if your system uses it
 conda activate bioinf    # Activate your specific bioinformatics Conda environment (e.g., where seqkit is installed)
 
 echo "Starting contig retrieval process..."
