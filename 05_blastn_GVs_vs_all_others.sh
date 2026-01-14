@@ -24,9 +24,12 @@ QUERY_COMBINED_FASTA="${BLAST_DB_DIR}query_contigs_for_blast.fna"
 
 # --- BLAST Parameters ---
 # Minimum percent identity for megablast (e.g., 95 for very similar, 90 for strong overlap)
-MIN_PERCENT_IDENTITY=95
-# Minimum query coverage (e.g., 80% of query length must align)
-MIN_QUERY_COVERAGE=80
+MIN_PERCENT_IDENTITY=90
+
+# --- Load necessary tools ---
+module load BLAST+/2.17.0-gompi-2024a
+module load Conda
+conda activate bioinf # Ensure blast+ (makeblastdb, blastn) is in this environment
 
 echo "Starting BLAST comparison for contig overlap..."
 echo "GV Contigs directory: ${GV_CONTIGS_DIR}"
@@ -71,7 +74,6 @@ blastn -query "${QUERY_COMBINED_FASTA}" \
        -task megablast \
        -num_threads "${SLURM_CPUS_PER_TASK}" \
        -perc_identity "${MIN_PERCENT_IDENTITY}" \
-       -qcov_hsp_perc "${MIN_QUERY_COVERAGE}" \
        -max_target_seqs 1000 # Limit hits per query; adjust if you expect more relevant matches
 
 echo "BLASTN comparison complete. Results saved to: ${BLAST_RESULTS_FILE}"

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=filter_contigs_by_len
-#SBATCH --output=log/filter_contigs_by_len_%A.out
-#SBATCH --error=log/filter_contigs_by_len_%A.err
+#SBATCH --output=log/04_filter_contigs_by_len_%A.out
+#SBATCH --error=log/04_filter_contigs_by_len_%A.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --time=2:00:00
