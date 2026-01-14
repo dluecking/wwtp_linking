@@ -328,8 +328,15 @@ for(contig in list_of_sequences_to_print){
 
 # check scale free and other stats ----------------------------------------
 
+g <- graph_from_data_frame(big_connection_df)
+
+g <- graph_from_data_frame(d = big_connection_df, 
+                           directed = FALSE, 
+                           vertices = contig_df)
+
 # 1. Generate the data
 d <- degree(g)
+
 # Create a frequency table and calculate the cumulative probability
 degree_counts <- as.data.frame(table(d))
 names(degree_counts) <- c("k", "Freq")
@@ -355,6 +362,33 @@ ggplot(degree_counts, aes(x = k, y = cumulative_prob)) +
 
 
 
+# check with poweRlaw -----------------------------------------------------
+
+library(poweRlaw)
+
+# Create a distribution object
+d_positive <- d[d > 0]
+m_pl <- displ$new(d_positive)
+
+# Estimate the minimum degree (xmin) where the power law starts
+est <- estimate_xmin(m_pl)
+m_pl$setXmin(est)
+
+# Compare with a log-normal distribution
+m_ln <- dislnorm$new(d_positive)
+m_ln$setXmin(m_pl$getXmin()) # Compare on the same tail
+m_ln$setPars(estimate_pars(m_ln))
+
+comp <- compare_distributions(m_pl, m_ln)
+comp$test_statistic # Positive = Power law is better; Negative = Log-normal is better
+comp$p_two_sided
+
+
+
+
+# does contig length correlate with K (number of connections?) ------------
+
+deg <- degree(g, mode = "all")
 
 
 

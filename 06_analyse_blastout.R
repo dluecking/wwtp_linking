@@ -20,17 +20,21 @@ blast_out <- fread("intermediate/blast_results/query_vs_gv_contigs_megablast.tsv
                                  "qstart", "qend", "sstart", "send", "evalue", "bitscore",
                                  "qlen", "slen"))
 
+blast_out <- fread("intermediate/blast_db/TEST_OUTFILE.txt",
+                   col.names = c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen",
+                                 "qstart", "qend", "sstart", "send", "evalue", "bitscore",
+                                 "qlen", "slen"))
+
 # Filter and process hits -------------------------------------------------
 
 # this one is better, but not implemented yet:
-final_table_of_hits <- blast_out_NEW %>%
+final_table_of_hits <- blast_out %>%
   as_tibble() %>%
   mutate(
     pident = as.numeric(pident),
     qlen = as.numeric(qlen),
     length = as.numeric(length)
   ) %>%
-  # GROUP BY QUERY: This is the critical missing step
   group_by(qseqid, sseqid) %>%
   summarise(
     total_alignment_length = sum(length),
@@ -41,14 +45,23 @@ final_table_of_hits <- blast_out_NEW %>%
     .groups = "drop"
   ) %>%
   mutate(
-    total_query_coverage = (total_alignment_length / query_length) * 100
+    total_query_coverage = (total_alignment_length / query_length) * 100,
+    total_subject_coverage = (total_alignment_length / subject_length) * 100
   ) %>%
   # Now you can filter effectively
   filter(
     avg_identity > 90,
-    total_query_coverage > 90
-  )
+    total_query_coverage > 90 | total_subject_coverage > 90
+  ) %>% 
+  # now lets only keep same sample hits
+  mutate(
+    q_sample = str_remove(qseqid, "\\_.*$"),
+    s_sample = str_remove(sseqid, "\\_.*$")
+  ) %>% 
+  filter(q_sample == s_sample)
+
+
 
 # save to helperfile ------------------------------------------------------
 
-fwrite(final_table_of_hits %>% select(qseqid), "helperfiles/contigs_to_remove_since_matching_GVs.txt", col.names = F)
+fwrite(final_table_of_hits %>% select(qseqid) %>% unique(), "helperfiles/contigs_to_remove_since_matching_GVs.txt", col.names = F)
