@@ -20,11 +20,6 @@ blast_out <- fread("intermediate/blast_results/query_vs_gv_contigs_megablast.tsv
                                  "qstart", "qend", "sstart", "send", "evalue", "bitscore",
                                  "qlen", "slen"))
 
-blast_out <- fread("intermediate/blast_db/TEST_OUTFILE.txt",
-                   col.names = c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen",
-                                 "qstart", "qend", "sstart", "send", "evalue", "bitscore",
-                                 "qlen", "slen"))
-
 # Filter and process hits -------------------------------------------------
 
 # this one is better, but not implemented yet:
