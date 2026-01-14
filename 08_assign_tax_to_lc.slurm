@@ -8,6 +8,12 @@
 #SBATCH --mem=128G # Adjust based on DIAMOND's memory requirements for the NR database
 #SBATCH --array=2-23 # 
 
+# load modules
+module load DIAMOND/2.1.9-GCC-13.2.0
+module load Conda
+module load prodigal/2.6.3-GCCcore-13.3.0
+conda activate bioinf
+
 # --- Configuration ---
 # Path to your diamond_assign_classficiation.sh script
 DIAMOND_TAX_SCRIPT="/lisc/home/user/luecking/scripts/diamond_assign_classfication.sh"
@@ -17,12 +23,6 @@ INPUT_FILE_LIST="helperfiles/lc_filtered_files.txt"
 
 # Output directory for the taxonomy CSVs
 OUTPUT_TAX_DIR="intermediate/lc_tax/"
-
-# load modules
-module load diamond
-module load conda
-module load prodigal
-conda activate bioinf
 
 echo "Starting taxonomic assignment for filtered LC contigs using Slurm Array..."
 echo "Input file list: ${INPUT_FILE_LIST}"

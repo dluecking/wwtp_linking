@@ -11,6 +11,7 @@ library(ggtree)
 library(ggtreeExtra)
 library(googlesheets4)
 library(ggnewscale)
+library(paletteer)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -74,6 +75,7 @@ tree_data$circularity <- GV_info$circular[match(tree_data$tip_label, GV_info$tip
 
 # completeness estimate
 tree_data$completeness <- GV_info$completeness[match(tree_data$tip_label, GV_info$tip_label)]
+tree_data$completeness[is.na(tree_data$completeness)] <- "not assessed"
 
 
 # short_id needs to be added: you are "" unless you are in my dataset, OR I manually want to higlight with a specific short_id
@@ -135,6 +137,14 @@ tree <- ggtree(aster_tree, layout = "fan", open.angle = 180)
 paletteer_d("dichromat::BluetoOrangeRed_14")
 
 tree %<+% tree_data + 
+  geom_tiplab(mapping = aes(label = short_id, 
+                            colour = show_in_tree, 
+                            fontface = label_bold),
+              linesize = 0.25,
+              align = TRUE, 
+              size = 1.55,
+              hjust = 0,
+              offset = 0.7) +
   # first order
   geom_fruit(geom = geom_tile,
              mapping = aes(y = tip_label, fill = tax_order),
@@ -161,9 +171,10 @@ tree %<+% tree_data +
     values = c("complete" = "#333333", 
                "likely complete" = "#666666", 
                "likely incomplete" = "#999999", 
-               "incomplete" = "#E5E5E5"),  
-    na.translate = FALSE,  # suppress legend item and display for NA
+               "incomplete" = "#E5E5E5",
+               "not assessed" = "white"),
     na.value = "white",
+    na.translate = FALSE,  # suppress legend item and display for NA
     guide = guide_legend(title = "Completeness")
   ) +
   # Point showing circularity
@@ -171,24 +182,17 @@ tree %<+% tree_data +
     geom = geom_point,
     mapping = aes(y = tip_label, shape = circularity),
     fill = "black",
-    alpha = 0.8,
+    alpha = 0.95,
     size = 1.2, offset = 0.03
   ) +
   # then labels
   scale_shape_manual(
-    values = c("Y" = 19, "N" = 17),  # 21 = circle, 22 = square
+    values = c("Y" = 1, "N" = 3),  # 21 = circle, 22 = square
     na.translate = FALSE,  # suppress legend item and display for NA,
     guide = guide_legend(title = "Circularity"),
     labels = c("Y" = "circular", "N" = "linear")
   ) +
-  geom_tiplab(mapping = aes(label = short_id, 
-                            colour = show_in_tree, 
-                            fontface = label_bold),
-              linesize = 0.25,
-              align = TRUE, 
-              size = 1.6,
-              hjust = 0,
-              offset = 0.7) +
+
   # scale_linetype_manual(values = c("blank" = "dotted", "aa" = "aa")) +
   scale_color_manual(values = c("TRUE" = "black", "FALSE" = "black"), guide = "none") +
   theme_tree() +
@@ -204,7 +208,7 @@ tree %<+% tree_data +
     mapping = aes(subset = !is.na(as.numeric(label)) & as.numeric(label) > 0.75), # Or > 0.95 for LPP
     color = "black",
     size = 1.0,
-    shape = 19  # A solid circle
+    shape = 19
   ) 
 
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 module load Conda
 conda activate bioinf
 

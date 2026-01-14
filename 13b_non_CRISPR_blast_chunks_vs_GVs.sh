@@ -1,6 +1,6 @@
 #!/bin/bash
 # Load the required module
-module load ncbiblastplus/2.16.0
+module load BLAST+/2.17.0-gompi-2024a
 
 mkdir -p intermediate/non_CRISPR/blastn_out
 

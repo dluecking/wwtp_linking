@@ -8,7 +8,7 @@
 #SBATCH --mem=256G
 #SBATCH --array=2-23 # up ot 23
 
-module load cdhit
+module load CD-HIT/4.8.1-GCC-12.3.0
 
 INPUT_READS_DIR="data/reads/illumina/"
 OUTPUT_DIR="intermediate/occurance/reads_derep/illumina/"

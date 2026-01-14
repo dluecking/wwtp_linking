@@ -4,6 +4,8 @@ deprecated/
 log/
 intermediate/
 testing/
+supplementary/
+
 
 # Ignore test scripts
 test*

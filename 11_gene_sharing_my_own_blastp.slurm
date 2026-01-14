@@ -9,7 +9,7 @@
 
 
 ## --- Load necessary modules ---
-module load diamond
+module load DIAMOND/2.1.9-GCC-13.2.0
 
 ## --- Define File Paths ---
 ALL_PROTEINS="intermediate/proteins/all_proteins.faa"

@@ -10,7 +10,7 @@
 # --- Configuration ---
 ASSEMBLY_DIR="data/assemblies/"
 OUTPUT_DIR="intermediate/contigs/lc/"
-MIN_LENGTH=100000 # Min length of contigs to retain
+MIN_LENGTH=100000
 
 # --- Load tools ---
 module load Conda

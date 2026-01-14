@@ -8,7 +8,7 @@
 #SBATCH --array=1-62 # 0-62 is the array
 
 
-module load prodigal
+module load prodigal/2.6.3-GCCcore-13.3.0
 
 
 # --- SETUP ---

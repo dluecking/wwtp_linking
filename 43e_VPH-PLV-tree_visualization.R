@@ -4,14 +4,15 @@
 # Packages
 library(dplyr)
 library(seqinr)
-library(ggplot2)
 library(data.table)
 library(stringr)
 library(ggtree)
 library(ggtreeExtra)
 library(googlesheets4)
 library(ggnewscale)
-
+library(tidyr)
+library(ggplot2)
+library(ape)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -69,6 +70,19 @@ tree_data <- data.table(tip_label = tree$tip.label,
 
 
 for(i in 1:nrow(tree_data)){
+  # zero: if this is NP_048787.1 then we do something
+  if(tree_data$tip_label[i] == "NP_048787.1"){
+    # this is the root!
+    tree_data$short_id[i] <- "PBCV-1"
+    tree_data$long_id[i] <- "Paramecium bursaria Chlorella virus 1"
+    tree_data$class[i] <- "Megaviricetes"
+    tree_data$order[i] <- "Algavirales"
+    tree_data$family[i] <- "Phycodnaviridae"
+    tree_data$origin[i] <- "NCBI"
+    tree_data$length[i] <- 0
+    next
+  }
+  
   # first, if its one of ours
   if(str_detect(tree_data$tip_label[i], "\\_plv\\_|\\_vph\\_")){
     # is it a plv?
@@ -79,7 +93,7 @@ for(i in 1:nrow(tree_data)){
       tree_data$long_id[i] <- tree_data$short_id[i]
       tree_data$class[i] <- "Polinton-like virus"
       tree_data$order[i] <- "Polinton-like virus"
-      tree_data$familiy[i] <- "Unclassified"
+      tree_data$family[i] <- "Unclassified"
       tree_data$origin[i] <- "this study"
       tree_data$length[i] <- plv_df$length[plv_df$public_ID == tree_data$short_id[i]]
       # skip to next one
@@ -92,7 +106,7 @@ for(i in 1:nrow(tree_data)){
       tree_data$long_id[i] <- tree_data$short_id[i]
       tree_data$class[i] <- "Virophaviricetes"
       tree_data$order[i] <- "Unclassified"
-      tree_data$familiy[i] <- "Unclassified"
+      tree_data$family[i] <- "Unclassified"
       tree_data$origin[i] <- "this study"
       tree_data$length[i] <- vph_df$length[vph_df$public_ID == str_remove(tree_data$short_id[i], "\\_vph")]
       
@@ -160,7 +174,7 @@ tree_data <- tree_data %>%
     tip_label == "Damh_tig00018526-10-141480_vph_14" ~ "mivida",
     tip_label == "Aved_tig00056523-10-134420_vph_14" ~ "mivida",
     tip_label == "MG807318.2_12" ~ "mivida", # zamilon
-    tip_label == "JN603370.1_20" ~ "mivida", # sputnik
+    tip_label == "JN603370.1_20" ~ "mivida", # sputnik 
     
     TRUE ~ NA
   ))
@@ -171,22 +185,33 @@ tree_data <- tree_data %>%
 
 # plotting ----------------------------------------------------------------
 
-tree_midpoint <- phangorn::midpoint(tree = tree) # I used this only once, to show that the PLVs are the correct outgroup
+# tree_midpoint <- phangorn::midpoint(tree = tree) # I used this only once, to show that the PLVs are the correct outgroup
+# rerooted_tree <- root(tree, outgroup = "Ejby_tig00023995-10-186920_plv_14", resolve.root = TRUE)
 
-a <- ggtree(tree, layout = "fan", open.angle = 180, right = F) %<+% tree_data
+rerooted_tree <- root(tree, outgroup = "NP_048787.1", resolve.root = TRUE)
+
+# # test something
+# rerooted_tree$edge.length[1] <- 0
+# rerooted_tree$edge
+# 
+# r <- as.data.table(rerooted_tree$edge.length)
+# t <- as.data.table(tree$edge.length)
+
+
+a <- ggtree(rerooted_tree, layout = "fan", open.angle = 180, right = F, linewidth = 0.5) %<+% tree_data
 a + 
   geom_tiplab(
     aes(label = ifelse(grepl("^IMG", short_id), NA, short_id), 
         fontface = label_bold), 
     align = TRUE, 
-    linesize = 0.05, 
+    linesize = 0.3, 
     size = 2, 
-    offset = 1.8
+    offset = 1
   ) +
   geom_fruit(
     geom = geom_tile,
     mapping = aes(y = tip_label, fill = origin),
-    color = "black", offset = 0.05, size = 0.3
+    color = "black", offset = 0.05, size = 0.3, pwidth = 0.15
   ) +
   scale_fill_manual(
     values = c(
@@ -199,11 +224,10 @@ a +
                          keyheight=0.5))  +
   
   new_scale_fill() +
-  
   geom_fruit(
     geom = geom_tile,
     mapping = aes(y = tip_label, fill = order),
-    color = "black", offset = 0.05, size = 0.3
+    color = "black", offset = 0.05, size = 0.3, pwidth = 0.15
   ) +
   scale_fill_manual(
     values = c(
@@ -214,17 +238,16 @@ a +
     guide = guide_legend(title = "Order", 
                          keywidth=0.5,
                          keyheight=0.5)) +
-  
   geom_fruit(
     geom=geom_bar,
     mapping=aes(y=tip_label, x=length),
-    fill = "black",
-    alpha = 0.5,
+    fill = "grey",
+    # alpha = 0.5,
     pwidth=0.1, 
     orientation="y", 
     stat="identity",
     color="black",
-    size = 0.3,
+    linewidth = 0.3,
     axis.params=list(
       axis       = "x",
       text.size  = 0,
@@ -243,10 +266,12 @@ a +
     color = "black",
     size = 1.0,
     shape = 19  # A solid circle
-  )
+  ) +
+  geom_rootedge(rootedge = 2)
 
 ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.pdf", height = 6, width = 10)
 ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.svg", height = 6, width = 10)
+ggsave(plot = last_plot(), file = "final/trees/plv_vph_references.png", height = 6, width = 10)
 
 
 

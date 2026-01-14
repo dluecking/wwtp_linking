@@ -7,8 +7,7 @@
 #SBATCH --mem=1G
 #SBATCH --array=1-62 # 0 to 62 is the array
 
-module load aragorn
-
+module load aragorn-1.2.41
 
 # --- SETUP ---
 INPUT_DIR="data/gv_contigs"

@@ -3,14 +3,14 @@
 
 # STEP 1: Run Prodigal to predict genes of public vphs/plvs
 echo "Running prodigal..."
-module load prodigal
+module load prodigal/2.6.3-GCCcore-13.3.0
 
 prodigal -i data/virophages_public/all_public_vphs.fasta -a intermediate/proteins/all_public_vphs_proteins.faa -p meta
 echo "Prodigal completed."
 
 # STEP 2: Run HMMER to search for MCPs
 echo "Running hmmsearch..."
-module load hmmer
+module load HMMER/3.4-gompi-2024a
 
 PROTEIN_FILE=intermediate/proteins/all_public_vphs_proteins.faa
 hmmsearch \
@@ -26,7 +26,7 @@ echo "HMMER search completed."
 
 # STEP 3: Retrieve sequences of MCPs
 echo "Retrieving MCP sequences..."
-module load conda
+module load Conda
 conda activate R
 
 Rscript scripts/retrieve_mcp_sequences.R  \
@@ -36,8 +36,6 @@ Rscript scripts/retrieve_mcp_sequences.R  \
   --my_vph_protein_dir intermediate/proteins/cleaned/vph \
   --my_plv_protein_dir intermediate/proteins/cleaned/plv \
   --output intermediate/proteins/all_public_and_my_own_MCP_proteins.faa 
-
-
 
 echo "MCP sequences retrieved."
 

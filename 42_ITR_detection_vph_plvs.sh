@@ -3,7 +3,7 @@
 
 # STEP 1 retrieve ends of PLVs and VPHs
 echo "Retrieving ends of PLVs and VPHs..."
-module load conda
+module load Conda
 conda activate R
 
 Rscript scripts/retrieve_VPH_PLV_ends.R intermediate/ITRs/vph_plv_ends.fasta
@@ -12,7 +12,7 @@ echo "Ends of PLVs and VPHs retrieved successfully."
 
 # STEP 2 create blast db
 echo "Creating BLAST database for VPH/PLV ends..."
-module load ncbiblastplus/2.16.0
+module load BLAST+/2.17.0-gompi-2024a
 
 makeblastdb -in intermediate/ITRs/vph_plv_ends.fasta \
             -dbtype nucl \
@@ -38,7 +38,7 @@ echo "BLAST completed successfully."
 # STEP 4 filter blast results
 echo "Filtering BLAST results to identify ITRs in VPHs and PLVs..."
 
-conda activate R
+Conda activate R
 Rscript scripts/filter_VPH_PLV_ITR_blast_results.R intermediate/ITRs/ends_vs_ends.out intermediate/ITRs/vph_plv_ITR_info.tsv
 
 echo "Filtering completed successfully. ITRs information saved to intermediate/ITRs/vph_plv_ITR_info.tsv."

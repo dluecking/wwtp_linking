@@ -52,7 +52,17 @@ contig_df <- contig_df %>%
 # load GV info
 sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474"
 GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
-  select(shortname, personal_assessment_order, public_ID)
+  select(shortname, personal_assessment_order, public_ID) %>% 
+  drop_na(shortname)
+
+# load other info
+sheet_url <- "https://docs.google.com/spreadsheets/d/1CnqcfhOfS0rVBU6mvyCKrm50BmxJjVvif47f9vkQZgU/edit?gid=836958150#gid=836958150"
+vph_info <- read_sheet(sheet_url, sheet = "Table S3") %>% 
+  select(contig_ID, public_ID)
+plv_info <- read_sheet(sheet_url, sheet = "Table S4") %>% 
+  select(contig_ID, public_ID)
+vph_plv_combined_info <- rbind(vph_info, plv_info)
+
 
 # load tax info
 lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
@@ -129,14 +139,17 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 # visualize a subcluster surrounding a specific node ----------------------
 
 # CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
-CONTIG_OF_INTEREST <- "Vibo_2_3_4"
-SAVE_PLOT <- TRUE
+CONTIG_OF_INTEREST <- "Bjer_2_3"
+SAVE_PLOT <- FALSE
 
-# plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
-# vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
+plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
+vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
 gvs <- GV_info$shortname
 
-for(contig in gvs){
+list_of_sequences_to_print <- vphs
+
+
+for(contig in list_of_sequences_to_print){
   CONTIG_OF_INTEREST <- contig
   # get a list of ids that are part of the specific subcluster
   # this first retains only connections which are of a specific type (e.g. "gene_sharing")
@@ -185,7 +198,7 @@ for(contig in gvs){
       filter(contig_id == small_node_df$id[i])
     
     if(nrow(tmp_df) >= 1){
-       cas_genes <- tmp_df %>% 
+      cas_genes <- tmp_df %>% 
         select(annotation) %>% 
         unlist() %>% 
         unique() %>% 
@@ -210,25 +223,49 @@ for(contig in gvs){
   
   g <- as_tbl_graph(g)
   
-  layout <- create_layout(g, layout = "fr")
+  # CHANGE HERE!
+  g <- g %>%
+    activate(nodes) %>%
+    mutate(is_focal = (name == CONTIG_OF_INTEREST))
+  
+  
+  # layout <- create_layout(g, layout = "fr")
   ggiraph_plot <- ggraph(layout) +
     geom_edge_link(aes(color = type), show.legend = F) +
-    geom_point_interactive(size = 3,
-                           alpha = 0.8,
+    geom_point_interactive(shape = 21,
                            aes(x = x, 
-                               y = y, 
-                               color = node_type,
+                               y = y,
+                               size = if_else(is_focal, 4, 4),
+                               alpha = if_else(is_focal, 1, 0.8),   
+                               fill = node_type,
                                data_id = public_ID,
                                tooltip = paste("Node ID:", public_ID,
                                                "\nType:", node_type,
                                                "\nTaxonomy:", tax_info,
-                                               "\nCas genes: ", cas_genes))) +
-    scale_color_manual(values = c(
+                                               "\nCas genes: ", cas_genes),
+                               color = if_else(is_focal, "black", "white"),   # black border for focal node, none for others
+                               stroke = if_else(is_focal, 1, 0)
+                               
+                           )) +
+    scale_fill_manual(values = c(
       vph = "goldenrod1",
       lc = "seagreen",
       plv = "hotpink",
       gv = "steelblue"
-    )) +
+    ),
+    labels = c(
+      vph = "VPH",
+      lc = "MC",
+      plv = "PLV",
+      gv = "NCV"
+    ),
+    name = "Node Type") +
+    guides(fill = guide_legend(
+      override.aes = list(size = 4)  # increase legend point size
+    ))+
+    scale_size_identity() +
+    scale_alpha_identity() +
+    scale_color_identity() +
     facet_edges(~edge_type, ncol = 3, labeller = labeller(
       edge_type = c(
         "gene_sharing" = "Gene Sharing",
@@ -255,20 +292,103 @@ for(contig in gvs){
     )
   
   interactive_plot <- girafe(ggobj = ggiraph_plot)
+  interactive_plot
+  
   
   if(SAVE_PLOT){
+    type_of_contig <- str_remove(contig, "^.*\\_")
+    
+    if(type_of_contig == "plv" || type_of_contig == "vph"){
+      public_ID <- vph_plv_combined_info$public_ID[vph_plv_combined_info$contig_ID == CONTIG_OF_INTEREST]
+      FILE_BASE <- paste0("final/plv_vph_subclusters/", public_ID) 
+    }else{
+      public_ID <- GV_info$public_ID[GV_info$shortname == CONTIG_OF_INTEREST]
+      FILE_BASE <- paste0("final/gv_subclusters/", public_ID)
+    }
+    
     # in case you want to save
     # for ggsave this is a bit more complicated, since we need to adjust the width and height:
     FACETS <- length(unique(small_edge_df$type))
     HEIGHT_FACTOR <- ceiling(FACETS / 3)
     
     ggsave(ggiraph_plot + theme(legend.position = "none"), 
-           file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, ".svg"), 
+           file = paste0(FILE_BASE, ".svg"), 
            width = 4.5, height = 1.8*HEIGHT_FACTOR)
-    htmltools::save_html(interactive_plot, file = paste0("final/gv_subclusters/", CONTIG_OF_INTEREST, "_interactive.html"))
+    ggsave(ggiraph_plot + theme(legend.position = "none"), 
+           file = paste0(FILE_BASE, ".pdf"), 
+           width = 4.5, height = 1.8*HEIGHT_FACTOR)
+    ggsave(ggiraph_plot + theme(legend.position = "none"), 
+           file = paste0(FILE_BASE, ".png"), 
+           width = 4.5, height = 1.8*HEIGHT_FACTOR)
+    htmltools::save_html(interactive_plot, file = paste0(FILE_BASE, "_interactive.html"))
   }
 }
 
+
+
+# check scale free and other stats ----------------------------------------
+
+g <- graph_from_data_frame(big_connection_df)
+
+g <- graph_from_data_frame(d = big_connection_df, 
+                           directed = FALSE, 
+                           vertices = contig_df)
+
+# 1. Generate the data
+d <- degree(g)
+
+# Create a frequency table and calculate the cumulative probability
+degree_counts <- as.data.frame(table(d))
+names(degree_counts) <- c("k", "Freq")
+degree_counts$k <- as.numeric(as.character(degree_counts$k))
+
+# Sort and calculate cumulative distribution P(X >= k)
+degree_counts <- degree_counts[order(degree_counts$k, decreasing = TRUE), ]
+degree_counts$cumulative_prob <- cumsum(degree_counts$Freq) / sum(degree_counts$Freq)
+
+# 2. Plot with ggplot2
+ggplot(degree_counts, aes(x = k, y = cumulative_prob)) +
+  geom_point(alpha = 0.6, color = "steelblue") +
+  scale_x_log10() + 
+  scale_y_log10() +
+  annotation_logticks() + # Adds the visual "rug" lines for log scales
+  labs(
+    title = "Log-Log Degree Distribution",
+    subtitle = "Check for linearity to identify scale-free properties",
+    x = "Degree (k)",
+    y = "Cumulative Probability P(k)"
+  ) +
+  theme_minimal()
+
+
+
+# check with poweRlaw -----------------------------------------------------
+
+library(poweRlaw)
+
+# Create a distribution object
+d_positive <- d[d > 0]
+m_pl <- displ$new(d_positive)
+
+# Estimate the minimum degree (xmin) where the power law starts
+est <- estimate_xmin(m_pl)
+m_pl$setXmin(est)
+
+# Compare with a log-normal distribution
+m_ln <- dislnorm$new(d_positive)
+m_ln$setXmin(m_pl$getXmin()) # Compare on the same tail
+m_ln$setPars(estimate_pars(m_ln))
+
+comp <- compare_distributions(m_pl, m_ln)
+comp$test_statistic # Positive = Power law is better; Negative = Log-normal is better
+comp$p_two_sided
+
+
+
+
+# does contig length correlate with K (number of connections?) ------------
+
+deg <- degree(g, mode = "all")
 
 
 
@@ -347,6 +467,8 @@ for(layer in c(unique(big_connection_df$type), "all")){
   
   p <- deg_plot + bet_plot
   ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.png"), width = 7, height = 4)
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.pdf"), width = 7, height = 4)
+  ggsave(plot = p, file = paste0("final/centrality_plots/centrality_", layer, "_plot.svg"), width = 7, height = 4)
 }
 
 

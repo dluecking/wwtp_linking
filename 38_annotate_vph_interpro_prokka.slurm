@@ -8,6 +8,9 @@
 #SBATCH --time=1:00:00
 #SBATCH --mem=8G
 
+# load module
+module load InterProScan/5.76-107.0-GCC-13.3.0
+
 ########## Setup ##########
 protein_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" helperfiles/vph_proteins_to_annotate.txt)
 contig_file=$(sed -n "${SLURM_ARRAY_TASK_ID}p" helperfiles/vph_contigs_to_annotate.txt)
@@ -20,8 +23,6 @@ echo "Cleaning ${protein_file} to remove asterisks"
 sed 's/\*//g' intermediate/proteins/vph/${protein_file} > intermediate/proteins/cleaned/vph/${protein_file}
 
 ########## INTERPROSCAN ##########
-module load interproscan
-
 echo "Running InterProScan for ${protein_file}"
 mkdir -p intermediate/annotations/interpro/vph
 interproscan.sh \
@@ -30,8 +31,8 @@ interproscan.sh \
   --cpu 4
 
 ########## PROKKA ##########
-module load conda
-conda activate prokka
+module load Conda
+conda activate Prokka-1.15.6
 
 echo "Running Prokka for ${contig_file}"
 mkdir -p intermediate/annotations/prokka/vph

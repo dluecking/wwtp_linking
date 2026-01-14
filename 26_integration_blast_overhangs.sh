@@ -8,7 +8,7 @@
 #SBATCH --mem=128G         # Amount of RAM
 
 # --- Load necessary modules ---
-module load ncbiblastplus
+module load BLAST+/2.17.0-gompi-2024a
 
 # --- Define paths ---
 DB_DIR="intermediate/contigs"

@@ -7,9 +7,8 @@
 #SBATCH --mem=2G
 #SBATCH --array=1-62%15 # To get this number, run: ls -1 data/gv_contigs/*_polished.fasta | wc -l
 
-module load conda
-conda activate padloc
-
+module load Conda
+conda activate padloc-2.0.0
 
 # --- SETUP ---
 # Define directories

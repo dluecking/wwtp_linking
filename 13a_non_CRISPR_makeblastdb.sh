@@ -1,6 +1,7 @@
 #!/bin/bash
 
-module load ncbiblastplus/2.16.0
+module load BLAST+/2.17.0-gompi-2024a
+
 
 cat intermediate/non_CRISPR/chunks/* > intermediate/non_CRISPR/combined_chunks.fa
 
