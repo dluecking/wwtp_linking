@@ -16,7 +16,7 @@ setwd("/lisc/scratch/dome/luecking/projects/wwtp_linking")
 # load blastp output ------------------------------------------------------
 
 blast_out <- fread("intermediate/blastp/all_vs_all_blastp.tsv")
-# blast_out <- fread("intermediate/blastp/all_vs_all_blastp_subset.tsv")
+# blast_out <- fread("../intermediate/blastp/all_vs_all_blastp_subset.tsv")
 names(blast_out) <- c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", "qstart", "qend", "sstart", "send", "evalue", "bitscore", "qcovhsp")
 
 
@@ -44,7 +44,7 @@ summary_table <- blast_out %>%
 
 # count genes for each contig ---------------------------------------------
 
-protein_file <- "intermediate/proteins/all_proteins.faa"
+protein_file <- "../intermediate/proteins/all_proteins.faa"
 protein_accessions <- system2("grep", args = c("'>'", protein_file), stdout = TRUE)
 protein_accessions <- as.data.table(protein_accessions)
 
@@ -60,3 +60,36 @@ summary_table$genes_per_contig <- protein_numbers$N[match(summary_table$from, pr
 summary_table$gene_sharing <- summary_table$genes_shared / summary_table$genes_per_contig
 
 fwrite(summary_table %>% select(from, to, gene_sharing), file = "intermediate/network/gene_sharing.csv")
+
+
+
+# quick exploration: ------------------------------------------------------
+# does contig length correlate with number of genes shared?
+
+plot_data <- summary_table %>%
+  group_by(from) %>%
+  summarise(
+    total_genes_shared = sum(genes_shared),
+    genes_per_contig = first(genes_per_contig) # Assuming this value is the same for all rows of a 'from' contig
+  )
+
+ggplot(plot_data, aes(x = genes_per_contig, y = total_genes_shared)) +
+  geom_point(alpha = 0.5, color = "steelblue") +
+  # Add linear model with confidence intervals
+  geom_smooth(method = "lm", formula = y ~ x, color = "firebrick", fill = "lightgray") +
+  # Add R-squared and equation to the plot
+  annotate("text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, 
+           label = paste("R^2 == ", round(summary(lm(total_genes_shared ~ genes_per_contig, data = plot_data))$r.squared, 3)),
+           parse = TRUE) +
+  labs(
+    title = "Correlation: Genes vs. Total Shared Genes",
+    x = "Number of Genes on Contig",
+    y = "Total Number of Shared Genes (Summed)",
+    subtitle = "Linear regression with 95% confidence interval,\n10M subset, excluded 1 outlier."
+  ) +
+  theme_minimal()
+
+ggsave(plot = last_plot(), filename = "../final/gene_sharing_correlation_genes_vs_genes_shared.png", height = 5, width = 5)
+
+
+

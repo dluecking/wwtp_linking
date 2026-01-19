@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=map_ont
-#SBATCH --output=log/map_ont_%A_%a.out
-#SBATCH --error=log/map_ont_%A_%a.err
+#SBATCH --output=log/17b_map_ont_%A_%a.out
+#SBATCH --error=log/17b_map_ont_%A_%a.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16    
 #SBATCH --time=1-00:00:00     
 #SBATCH --mem=256G             
-#SBATCH --array=2-23%8 # up to 23
+#SBATCH --array=1-1%6 # up to 23
 
 
 # load modules

@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=blast_contig_overlap
-#SBATCH --output=log/blast_contig_overlap_%A.out
-#SBATCH --error=log/blast_contig_overlap_%A.err
+#SBATCH --output=log/05_blast_NCVs_vs_others_%A.out
+#SBATCH --error=log/05_blast_NCVs_vs_others_%A.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16 
 #SBATCH --time=4:00:00 

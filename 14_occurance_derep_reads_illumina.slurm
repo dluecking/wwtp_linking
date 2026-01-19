@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=derep_illumina
-#SBATCH --output=log/derep_illumina_%A_%a.out
-#SBATCH --error=log/derep_illumina_%A_%a.err
+#SBATCH --output=log/14_derep_illumina_%A_%a.out
+#SBATCH --error=log/14_derep_illumina_%A_%a.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --time=12:00:00

@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=cov_ill
-#SBATCH --output=log/cov_ill_%A_%a.out
-#SBATCH --error=log/cov_ill_%A_%a.err
+#SBATCH --output=log/18a_cov_ill_%A_%a.out
+#SBATCH --error=log/18a_cov_ill_%A_%a.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1    
 #SBATCH --time=01:00:00     
 #SBATCH --mem=64G             
-#SBATCH --array=2-23 # up to 23
+#SBATCH --array=1-23 # up to 23
 
 # load module
 module load SAMtools/1.23-GCC-14.2.0

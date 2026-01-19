@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=cov_ont
-#SBATCH --output=log/cov_ont_%A_%a.out
-#SBATCH --error=log/cov_ont_%A_%a.err
+#SBATCH --output=log/18b_cov_ont_%A_%a.out
+#SBATCH --error=log/18b_cov_ont_%A_%a.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1    
 #SBATCH --time=08:00:00     

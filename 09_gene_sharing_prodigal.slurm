@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=prodigal_predict_4loops
-#SBATCH --output=log/prodigal_predict_4loops_%j.out # %j for job ID
-#SBATCH --error=log/prodigal_predict_4loops_%j.err   # %j for job ID
+#SBATCH --output=log/09_prodigal_predict_4loops_%j.out # %j for job ID
+#SBATCH --error=log/09_prodigal_predict_4loops_%j.err   # %j for job ID
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1 # Prodigal is generally single-threaded per input file
 #SBATCH --time=24:00:00 # Adjust based on total processing time for ALL files

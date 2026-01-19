@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=run_diamond_tax_array
-#SBATCH --output=log/diamond_tax_array_%A_%a.out # %A for job ID, %a for array task ID
-#SBATCH --error=log/diamond_tax_array_%A_%a.err   # Separate logs for each array task
+#SBATCH --output=log/08_diamond_tax_array_%A_%a.out # %A for job ID, %a for array task ID
+#SBATCH --error=log/08_diamond_tax_array_%A_%a.err   # Separate logs for each array task
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16 # Match the --threads argument for diamond_assign_classficiation.sh
 #SBATCH --time=24:00:00 # Adjust based on expected runtime per file (e.g., 1-12 hours)
 #SBATCH --mem=128G # Adjust based on DIAMOND's memory requirements for the NR database
-#SBATCH --array=2-23 # 
+#SBATCH --array=2-23 # up to 23
 
 # load modules
 module load DIAMOND/2.1.9-GCC-13.2.0

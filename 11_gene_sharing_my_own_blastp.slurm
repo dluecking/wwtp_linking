@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=onw_blastp
-#SBATCH --output=log/onw_blastp_%A_%a.out # OUTPUT THAT WOULD PRINT TO SCREEN GOES HERE
-#SBATCH --error=log/onw_blastp_%A_%a.err # LOG FILE GOES HERE
+#SBATCH --job-name=own_blastp
+#SBATCH --output=log/11_own_blastp_%A_%a.out # OUTPUT THAT WOULD PRINT TO SCREEN GOES HERE
+#SBATCH --error=log/11_own_blastp_%A_%a.err # LOG FILE GOES HERE
 #SBATCH --ntasks=1 # FOR PARRALELIZATION, CAN SAFELY KEEP AT 1
 #SBATCH --cpus-per-task=12 # NUMBER OF CPUS YOU NEED (good number: 4-16)
 #SBATCH --time=3-00:00:00  # TIME YOU NEED DAY:HOURS:MINUTES:SECONDS (MORE -> it finishes probably, LESS -> you get priority on SLURM)
