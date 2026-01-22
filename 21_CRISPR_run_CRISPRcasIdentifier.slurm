@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=CRISPRcasID
-#SBATCH --output=log/crisprcasid_job_%j.out
-#SBATCH --error=log/crisprcasid_job_%j.err
+#SBATCH --output=log/21_crisprcasid_job_%j.out
+#SBATCH --error=log/21_crisprcasid_job_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4      # Request more CPUs for potentially faster processing

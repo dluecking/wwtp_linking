@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=run_minced
-#SBATCH --output=log/minced_job_%j.out
-#SBATCH --error=log/minced_job_%j.err
+#SBATCH --output=log/19a_minced_job_%j.out
+#SBATCH --error=log/19a_minced_job_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1

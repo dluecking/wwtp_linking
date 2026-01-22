@@ -10,7 +10,7 @@ library(stringr)
 
 # set working directory
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-setwd("/lisc/scratch/dome/luecking/projects/wwtp_linking")
+setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
 
 
 # load blastp output ------------------------------------------------------
@@ -44,7 +44,7 @@ summary_table <- blast_out %>%
 
 # count genes for each contig ---------------------------------------------
 
-protein_file <- "../intermediate/proteins/all_proteins.faa"
+protein_file <- "intermediate/proteins/all_proteins.faa"
 protein_accessions <- system2("grep", args = c("'>'", protein_file), stdout = TRUE)
 protein_accessions <- as.data.table(protein_accessions)
 
@@ -65,31 +65,31 @@ fwrite(summary_table %>% select(from, to, gene_sharing), file = "intermediate/ne
 
 # quick exploration: ------------------------------------------------------
 # does contig length correlate with number of genes shared?
-
-plot_data <- summary_table %>%
-  group_by(from) %>%
-  summarise(
-    total_genes_shared = sum(genes_shared),
-    genes_per_contig = first(genes_per_contig) # Assuming this value is the same for all rows of a 'from' contig
-  )
-
-ggplot(plot_data, aes(x = genes_per_contig, y = total_genes_shared)) +
-  geom_point(alpha = 0.5, color = "steelblue") +
-  # Add linear model with confidence intervals
-  geom_smooth(method = "lm", formula = y ~ x, color = "firebrick", fill = "lightgray") +
-  # Add R-squared and equation to the plot
-  annotate("text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, 
-           label = paste("R^2 == ", round(summary(lm(total_genes_shared ~ genes_per_contig, data = plot_data))$r.squared, 3)),
-           parse = TRUE) +
-  labs(
-    title = "Correlation: Genes vs. Total Shared Genes",
-    x = "Number of Genes on Contig",
-    y = "Total Number of Shared Genes (Summed)",
-    subtitle = "Linear regression with 95% confidence interval,\n10M subset, excluded 1 outlier."
-  ) +
-  theme_minimal()
-
-ggsave(plot = last_plot(), filename = "../final/gene_sharing_correlation_genes_vs_genes_shared.png", height = 5, width = 5)
+# 
+# plot_data <- summary_table %>%
+#   group_by(from) %>%
+#   summarise(
+#     total_genes_shared = sum(genes_shared),
+#     genes_per_contig = first(genes_per_contig) # Assuming this value is the same for all rows of a 'from' contig
+#   )
+# 
+# ggplot(plot_data, aes(x = genes_per_contig, y = total_genes_shared)) +
+#   geom_point(alpha = 0.5, color = "steelblue") +
+#   # Add linear model with confidence intervals
+#   geom_smooth(method = "lm", formula = y ~ x, color = "firebrick", fill = "lightgray") +
+#   # Add R-squared and equation to the plot
+#   annotate("text", x = Inf, y = Inf, hjust = 1.1, vjust = 1.5, 
+#            label = paste("R^2 == ", round(summary(lm(total_genes_shared ~ genes_per_contig, data = plot_data))$r.squared, 3)),
+#            parse = TRUE) +
+#   labs(
+#     title = "Correlation: Genes vs. Total Shared Genes",
+#     x = "Number of Genes on Contig",
+#     y = "Total Number of Shared Genes (Summed)",
+#     subtitle = "Linear regression with 95% confidence interval,\n10M subset, excluded 1 outlier."
+#   ) +
+#   theme_minimal()
+# 
+# ggsave(plot = last_plot(), filename = "../final/gene_sharing_correlation_genes_vs_genes_shared.png", height = 5, width = 5)
 
 
 

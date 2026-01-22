@@ -6,13 +6,12 @@
 #SBATCH --cpus-per-task=16    
 #SBATCH --time=1-00:00:00     
 #SBATCH --mem=256G             
-#SBATCH --array=1-1%6 # up to 23
-
+#SBATCH --array=15%6 # up to 23
 
 # load modules
-module load Bowtie2/2.5.4-GCC-13.3.0
 module load SAMtools/1.23-GCC-14.2.0
 module load BEDTools/2.31.1-GCC-13.3.0
+module load minimap2/2.30-GCCcore-14.3.0
 
 # inputs
 REF_FILE="intermediate/contigs/all_contigs.fna"
@@ -25,12 +24,15 @@ echo "Mapping reads for sample: $SRR"
 echo "Reads: $READFILE"
 echo "Using reference: $REF_FILE"
 
-# outputs
-SAM="intermediate/occurance/mapping/ont/${SRR}_mapped.sam"
-BAM="intermediate/occurance/mapping/ont/${SRR}_mapped.bam"
-BAM_SORTED="intermediate/occurance/mapping/ont/${SRR}_mapped_sorted.bam"
-COV_FILE="intermediate/occurance/mapping/ont/${SRR}_mapped_coverage.txt"
+# create output dir
+OUTDIR="intermediate/occurance/mapping/ont"
+mkdir -p "$OUTDIR"
 
+# outputs
+SAM="${OUTDIR}/${SRR}_mapped.sam"
+BAM="${OUTDIR}/${SRR}_mapped.bam"
+BAM_SORTED="${OUTDIR}/${SRR}_mapped_sorted.bam"
+COV_FILE="${OUTDIR}/${SRR}_mapped_coverage.txt"
 
 # map reads to ref file
 minimap2 -ax map-ont -t $SLURM_CPUS_PER_TASK $REF_FILE $READFILE > $SAM

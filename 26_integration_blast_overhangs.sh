@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=integration_blast_overhangs
-#SBATCH --output=log/integration_blast_overhangs_%A_%a.out # Standard output log
-#SBATCH --error=log/integration_blast_overhangs_%A_%a.err # Standard error log
-#SBATCH --ntasks=1 # This script runs sequentially within one task, but can use multiple CPUs
-#SBATCH --cpus-per-task=12 # Number of CPUs for BLASTn threads
-#SBATCH --time=3-00:00:00  # Max runtime: 3 days
-#SBATCH --mem=128G         # Amount of RAM
+#SBATCH --output=log/26_integration_blast_overhangs_%A_%a.out 
+#SBATCH --error=log/26_integration_blast_overhangs_%A_%a.err 
+#SBATCH --ntasks=1 
+#SBATCH --cpus-per-task=12 
+#SBATCH --time=3-00:00:00  
+#SBATCH --mem=128G        
 
 # --- Load necessary modules ---
 module load BLAST+/2.17.0-gompi-2024a

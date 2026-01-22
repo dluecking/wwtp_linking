@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=map_integration
-#SBATCH --output=log/map_integration_%A_%a.out
-#SBATCH --error=log/map_integration_%A_%a.err
+#SBATCH --output=log/24_map_integration_%A_%a.out
+#SBATCH --error=log/24_map_integration_%A_%a.err
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16    
 #SBATCH --time=02:00:00     
@@ -14,9 +14,12 @@ module load minimap2/2.30-GCCcore-14.3.0
 module load BEDTools/2.31.1-GCC-13.3.0
 module load SAMtools/1.23-GCC-14.2.0
 
-# inputs
+
+# combine vph and plv files to REF file
 REF_FILE="intermediate/contigs/combined_gv_plv_vph.fna"
-# Changed to the new info file containing sample names and SRR accessions
+cat intermediate/contigs/vph/* intermediate/contigs/plv/* > "$REF_FILE"
+
+# read info file
 INFO_FILE="helperfiles/WWTP_Denmark_SRA_PRJNA629478.txt"
 
 # Get the relevant line for the current array task
@@ -24,6 +27,7 @@ LINE_INFO=$(sed -n "$((SLURM_ARRAY_TASK_ID))p" "$INFO_FILE")
 
 # Extract the full sample name from the first column of the line
 FULL_SAMPLE_NAME=$(echo "$LINE_INFO" | awk '{print $1}')
+
 # Extract the SRR accession from the third column of the line
 SRR_ID=$(echo "$LINE_INFO" | awk '{print $3}')
 

@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=16    
 #SBATCH --time=1-00:00:00     
 #SBATCH --mem=256G             
-#SBATCH --array=1-1%6 # up to 23
+#SBATCH --array=3-4%6 # up to 23
 
 # load module
 module load Bowtie2/2.5.4-GCC-13.3.0
@@ -26,10 +26,14 @@ echo "R1: $R1"
 echo "R2: $R2"
 echo "Using index: $INDEX_FILE"
 
+# create output dir
+OUTDIR="intermediate/occurance/mapping/illumina"
+mkdir -p "$OUTDIR"
+
 # OUTPUT FILES
-SAM="intermediate/occurance/mapping/illumina/${SRR}_mapped.sam"
-BAM="intermediate/occurance/mapping/illumina/${SRR}_mapped.bam"
-BAM_SORTED="intermediate/occurance/mapping/illumina/${SRR}_mapped_sorted.bam"
+SAM="${OUTDIR}/${SRR}_mapped.sam"
+BAM="${OUTDIR}/${SRR}_mapped.bam"
+BAM_SORTED="${OUTDIR}/${SRR}_mapped_sorted.bam"
 
 # map reads to reference
 bowtie2 --sensitive-local --no-mixed --no-unal -I 0 -X 1000 -p $SLURM_CPUS_PER_TASK -x "$INDEX_FILE" -1 "$R1" -2 "$R2" -S "$SAM"

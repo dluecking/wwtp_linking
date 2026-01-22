@@ -1,7 +1,7 @@
 #!/bin/bash
 
 module load Conda
-conda activate crispr-env
+conda activate /lisc/data/scratch/dome/willemsen/luecking/conda/conda_envs/crispr-env
 
 prinseq-lite.pl \
     -fasta intermediate/minced/minced_results_spacers.fa \

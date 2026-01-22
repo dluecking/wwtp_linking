@@ -14,4 +14,4 @@
 
     echo "Done with: $SHORT_SAMPLE_NAME"
   done
-} &> log/pysam_filter_extract.out
+} &> log/25_pysam_filter_extract.out

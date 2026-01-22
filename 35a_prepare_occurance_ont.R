@@ -101,8 +101,6 @@ occurance_filtered <- occurance_df %>%
 X_threshold <- 1.0 # Replace with your desired minimum value (X)
 Y_columns <- 5     # Replace with your desired minimum number of columns (Y)
 
-# Assuming 'occurance_filtered' is your data frame
-
 occurance_filtered <- occurance_filtered %>%
   rowwise() %>% # Process row by row
   mutate(
@@ -157,14 +155,6 @@ hist(x = edge_list$spearman_ont,
      col = "lightblue",
      border = "black")
 lines(density(edge_list$spearman_ont), col = "red", lwd = 2)
-
-# qqnorm(edge_list$spearman_ont,
-#        main = "Normal Q-Q Plot",
-#        xlab = "Theoretical Quantiles",
-#        ylab = "Sample Quantiles")
-# qqline(edge_list$spearman_ont, col = "blue", lwd = 2)
-# 
-
 
 
 

@@ -8,7 +8,7 @@
 #SBATCH --mem=256G             
 
 module load Conda
-conda activate R
+conda activate /lisc/data/scratch/dome/willemsen/luecking/conda/conda_envs/R
 
 Rscript scripts/prepare_gene_sharing.R 
 

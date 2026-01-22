@@ -27,7 +27,7 @@ edgelist_integration_b <- fread("intermediate/network/integration_b.csv")%>%
   select(from, to)
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")%>% 
   select(from, to)
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")%>% 
+edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")%>% 
   select(from, to)
 
 big_edgelist <- rbind(edgelist_crispr, edgelist_integration_b, edgelist_integration_m, edgelist_gene_sharing)
