@@ -9,7 +9,7 @@
 #SBATCH --time=16:00:00        # Set a reasonable time limit (e.g., 4 hours)
 
 module load Conda
-conda activate crispr-env
+conda activate /lisc/data/scratch/dome/willemsen/luecking/conda/conda_envs/crispr-env
 
 # --- Define paths ---
 CRISPRCASID_BIN="/lisc/home/user/luecking/bin/CRISPRcasIdentifier-1.1.0/CRISPRcasIdentifier.py"
