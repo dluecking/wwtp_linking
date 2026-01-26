@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1    
 #SBATCH --time=08:00:00     
 #SBATCH --mem=64G             
-#SBATCH --array=1-23 # up to 23
+#SBATCH --array=21 # up to 23
 
 # load module
 module load SAMtools/1.23-GCC-14.2.0

@@ -1,6 +1,9 @@
 # Author: dlu @ veelab
 # Version: 2025-06-16
 
+# start time
+start_time <- Sys.time()
+
 # Packages
 library(dplyr)
 library(data.table)
@@ -10,18 +13,26 @@ library(foreach)
 library(doParallel)
 
 
-cat("[INFO] loaded libraries!")
+cat("[INFO] loaded libraries!\n")
 
 # set working directory
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
+# setwd("/run/user/1000/gvfs/sftp:host=login01.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking")
 
 # cores
 n_cores <- 16
 registerDoParallel(cores = n_cores)
 
-cat("[INFO] set cores to 16!")
+# test mode?
+TEST_MODE <- FALSE
+if(TEST_MODE){
+  cat("[DEBUG] TEST MODE IS ACTIVATED, ONLY 1k CONTIGS SELECTED!!!\n")
+}
 
+
+cat("[INFO] set cores to 16!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 # functions ---------------------------------------------------------------
 
@@ -95,7 +106,7 @@ names(sample_names) <- c("sample", "ill", "ont")
 
 sample_names$sample_short <- str_remove(sample_names$sample, "\\_.*$")
 
-cat("[INFO] loaded helperfile and extracted sample names!")
+cat("[INFO] loaded helperfile and extracted sample names!\n")
 
 
 # load occurance data -----------------------------------------------------
@@ -150,8 +161,8 @@ if (length(list_of_dfs) > 0) {
 }
 rm(list_of_dfs, tmp_df, sample_names, current_ill_id_from_file, file_name, file_path, i, match_index, coverage_dir, coverage_files, sample_short_name)
 
-cat("[INFO] loaded coverage files!")
-
+cat("[INFO] loaded coverage files!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 ################################################################################
 # NOTE
@@ -190,7 +201,21 @@ occurance_filtered <- occurance_df %>%
   filter(count_above_X >= Y_columns) %>% # Keep rows where the count is at least Y_columns
   select(-count_above_X) # Remove the temporary count_above_X column if not needed
 
-cat("[INFO] filtered occurance DF!")
+cat("[INFO] filtered occurance DF!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
+
+
+# test case ---------------------------------------------------------------
+
+if(TEST_MODE) {
+  cat("[TEST] Running in TEST MODE with subset of data\n")
+  set.seed(42)
+  test_contigs <- sample(occurance_filtered$contig_id, size = 1000)
+  occurance_filtered <- occurance_filtered %>% 
+    filter(contig_id %in% test_contigs)
+  
+  cat("[TEST] Using only", nrow(occurance_filtered), "contigs\n")
+}
 
 
 # calculate spearman ------------------------------------------------------
@@ -202,26 +227,41 @@ numeric_matrix <- occurance_filtered %>%
 # clr transform
 clr_matrix <- t(apply(numeric_matrix, 1, clr_transform))
 
+# remove emtpy or inf values:
+cat("[DEBUG] Checking CLR matrix...\n")
+cat("  - Dimensions:", dim(clr_matrix), "\n")
+cat("  - NA values:", sum(is.na(clr_matrix)), "\n")
+cat("  - Inf values:", sum(is.infinite(clr_matrix)), "\n")
+
+# Remove rows (contigs) that are all NA or have Inf
+valid_rows <- apply(clr_matrix, 1, function(x) {
+  !all(is.na(x)) && !any(is.infinite(x)) && var(x, na.rm = TRUE) > 0
+})
+
+cat("[INFO] Removing", sum(!valid_rows), "problematic contigs\n")
+clr_matrix <- clr_matrix[valid_rows, ]
+
 # Transpose the matrix so contigs are columns and samples are rows
 transposed_matrix <- t(clr_matrix)
 
-cat("[INFO] transformed into CLR matrix!")
-
+cat("[INFO] transformed into CLR matrix!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 # calc spearman
 cor_matrix <- calculate_cor_parallel(transposed_matrix, 
                                      method = "spearman", 
                                      n_cores = n_cores)
 
-cat("[INFO] calculated cor matrix!")
-
-
-# remove duplicate information
-cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
+cat("[INFO] calculated cor matrix!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 # calculate RMT value
 rmt_result <- calculate_rmt_threshold(cor_matrix, n_samples = ncol(transposed_matrix))
-cat("[INFO] calculated RMT threshold!")
+cat("[INFO] calculated RMT threshold!\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
+
+# remove duplicate information
+cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
 
 # prepare for from to network
 edge_list <- as.data.frame(as.table(cor_matrix)) %>%
@@ -236,16 +276,17 @@ edge_list <- edge_list %>%
   ))
 
 # filter edgle_list based on RMT value
-cat("[INFO] RMT threshold:", rmt_result$threshold)
-cat("[INFO] Number of significant eigenvalues:", rmt_result$n_significant_eigenvalues)
-cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list)))
+cat("[INFO] RMT threshold:", rmt_result$threshold, "\n")
+cat("[INFO] Number of significant eigenvalues:", rmt_result$n_significant_eigenvalues, "\n")
+cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list), "\n"))
 
 # Filter edges
 edge_list_rmt <- edge_list %>% 
   filter(absolut_spearman >= rmt_result$threshold)
-cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list_rmt)))
+cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list_rmt)), "\n")
 
 # save that to a file -----------------------------------------------------
 
 fwrite(edge_list_rmt, "intermediate/network/occurance_ill.csv")
 cat("[INFO] final edgelist saved to: intermediate/network/occurance_ill.csv")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
