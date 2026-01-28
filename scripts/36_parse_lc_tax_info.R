@@ -10,7 +10,8 @@ library(stringr)
 library(taxize)
 
 # set working directory
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
 
 
 
@@ -32,6 +33,3 @@ if(!file.exists("intermediate/lc_tax/lc_tax_info_df.csv")){
 }else{
   tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
 }
-
-
-

@@ -36,46 +36,6 @@ cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 # functions ---------------------------------------------------------------
 
-# Manual RMT threshold calculation
-calculate_rmt_threshold <- function(cor_matrix, n_samples) {
-  
-  # 1. Calculate eigenvalues of correlation matrix
-  eigenvalues <- eigen(cor_matrix, only.values = TRUE)$values
-  
-  # 2. Marchenko-Pastur parameters
-  n_features <- nrow(cor_matrix)
-  Q <- n_features / n_samples  # Ratio
-  
-  # 3. Theoretical maximum eigenvalue for random matrix
-  # Assuming noise variance σ² = 1 (correlation matrix is standardized)
-  lambda_max <- (1 + sqrt(Q))^2
-  
-  # 4. Find empirical threshold
-  # Count eigenvalues above theoretical maximum
-  n_significant <- sum(eigenvalues > lambda_max)
-  
-  # 5. Convert eigenvalue threshold to correlation threshold
-  # This is approximate - you can also use the eigenvalue directly
-  # For now, use the eigenvalue corresponding to the cutoff
-  
-  if(n_significant > 0) {
-    threshold_eigenvalue <- sort(eigenvalues, decreasing = TRUE)[n_significant]
-    
-    # Rough conversion (this is approximate)
-    # Better: use the eigenvalue to filter the correlation matrix directly
-    threshold_corr <- sqrt(threshold_eigenvalue / n_samples)
-  } else {
-    threshold_corr <- 0.5  # Fallback
-  }
-  
-  return(list(
-    threshold = threshold_corr,
-    lambda_max_theory = lambda_max,
-    n_significant_eigenvalues = n_significant,
-    eigenvalues = eigenvalues
-  ))
-}
-
 # Parallel correlation
 calculate_cor_parallel <- function(matrix, method = "spearman", n_cores = n_cores) {
   
@@ -162,33 +122,14 @@ if (length(list_of_dfs) > 0) {
 rm(list_of_dfs, tmp_df, sample_names, current_ont_id_from_file, file_name, file_path, i, match_index, coverage_dir, coverage_files, sample_short_name)
 
 cat("[INFO] loaded coverage files!\n")
-
-
-################################################################################
-# NOTE
-# WE DID THIS BEFORE; BUT NOW WANT TO CIRCUMVENT THIS BY CALCULATING BETTER!
-
-# # only keep connected contigs ---------------------------------------------
-# 
-# lcs_to_keep <- fread("intermediate/network/list_of_connected_lcs.txt", header = F)
-# names(lcs_to_keep) <- c("contig_id")
-# 
-# # Filter the dataframe
-# occurance_filtered <- occurance_df %>%
-#   filter(
-#     # Condition 1: Keep rows where col1 does NOT end with "_lc"
-#     !grepl("_lc$", contig_id) |
-#       # Condition 2: OR (if col1 DOES end with "_lc") keep it if it's found in contigs_to_keep
-#       (grepl("_lc$", contig_id) & contig_id %in% lcs_to_keep$contig_id)
-#   )
-################################################################################
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 
 # remove contigs for which we have a weak signal --------------------------
 # the idea is: if you are only present in very few samples, you create noise
 
 X_threshold <- 1.0 # Replace with your desired minimum value (X)
-Y_columns <- 3     # Replace with your desired minimum number of columns (Y)
+Y_columns <- 12     # Replace with your desired minimum number of columns (Y)
 
 # Assuming 'occurance_filtered' is your data frame
 
@@ -255,10 +196,8 @@ cor_matrix <- calculate_cor_parallel(transposed_matrix,
 cat("[INFO] calculated cor matrix!\n")
 cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
-# calculate RMT value
-rmt_result <- calculate_rmt_threshold(cor_matrix, n_samples = ncol(transposed_matrix))
-cat("[INFO] calculated RMT threshold!\n")
-cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
+
+# prepare for network -----------------------------------------------------
 
 # remove duplicate information
 cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
@@ -275,15 +214,27 @@ edge_list <- edge_list %>%
     spearman_ont < 0 ~ "negative"
   ))
 
+
+# info for later ----------------------------------------------------------
+
+thresholds <- seq(0.1, 0.7, by = 0.05)
+
+for(t in thresholds) {
+  n <- sum(edge_list$absolut_spearman >= t)
+  cat(sprintf("[DEBUG] Threshold %.2f: %10d edges (%.2f%% of max)\n", 
+              t, n, n / (51767 * 51766 / 2) * 100))
+}
+
+SPEARMAN_CUTOFF <- 0.60
+
 # filter edgle_list based on RMT value
-cat("[INFO] RMT threshold:", rmt_result$threshold, "\n")
-cat("[INFO] Number of significant eigenvalues:", rmt_result$n_significant_eigenvalues, "\n")
-cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list), "\n"))
+cat("[INFO] SEPARMAN CUTOFF selected:", SPEARMAN_CUTOFF, "\n")
+cat(paste0("[INFO] Size of edge_list BEFORE filtereing above threshold: ", nrow(edge_list), "\n"))
 
 # Filter edges
 edge_list_rmt <- edge_list %>% 
-  filter(absolut_spearman >= rmt_result$threshold)
-cat(paste0("[INFO] Size of edge_list BEFORE filtereing above RMT threshold: ", nrow(edge_list_rmt)), "\n")
+  filter(absolut_spearman >= SPEARMAN_CUTOFF)
+cat(paste0("[INFO] Size of edge_list AFTER filtereing above threshold: ", nrow(edge_list_rmt)), "\n")
 
 # save that to a file -----------------------------------------------------
 

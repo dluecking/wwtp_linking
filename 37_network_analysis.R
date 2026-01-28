@@ -63,7 +63,6 @@ plv_info <- read_sheet(sheet_url, sheet = "Table S4") %>%
   select(contig_ID, public_ID)
 vph_plv_combined_info <- rbind(vph_info, plv_info)
 
-
 # load tax info
 lc_tax_info <- readRDS("intermediate/lc_tax/lc_tax_info_df.csv")
 lc_tax_info_short <- rbindlist(lapply(list.files("intermediate/lc_tax/", pattern = ".*filtered.csv", full.names = TRUE), fread))
@@ -100,46 +99,50 @@ for(i in 1:nrow(contig_df)){
 edgelist_crispr <- fread("intermediate/network/crispr.csv")
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
-edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_test.csv") # ATTENTION! This one is currently set to the stricter occurance filter
-edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_test.csv") # ATTENTION! This one is currently set to the stricter occurance filter
+edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
+edgelist_occurance_ill <- fread("intermediate/network/occurance_ill.csv") 
+edgelist_occurance_ont <- fread("intermediate/network/occurance_ont.csv")
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
+
+
+# load crispr cas data ----------------------------------------------------
+
+crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv") %>% 
+  filter(bitscore >= 100)
+crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
 # explore -----------------------------------------------------------------
 # create binary yes/no big list with connection type for each edge
 big_connection_df <- rbind(
-  edgelist_crispr %>% select(from, to) %>% 
+  edgelist_crispr %>% select(from, to, value = "crispr") %>% 
     mutate(type = "crispr"),
-  edgelist_gene_sharing %>% select(from, to) %>% 
+  edgelist_gene_sharing %>% select(from, to, value = "gene_sharing") %>% 
     mutate(type = "gene_sharing"),
-  edgelist_integration_b %>% select(from, to) %>% 
+  edgelist_integration_b %>% select(from, to, value = "integration_b") %>% 
     mutate(type = "integration_boundary"),
-  edgelist_integration_m %>% select(from, to) %>% 
+  edgelist_integration_m %>% select(from, to, value = "integration_m") %>% 
     mutate(type = "integration_middle"),
-  edgelist_non_crispr %>% select(from, to) %>% 
+  edgelist_non_crispr %>% select(from, to, value = "non_CRISPR") %>% 
     mutate(type = "non_crispr"),
-  edgelist_occurance_ill %>% filter(correlation == "positive") %>% select(from, to) %>% 
+  edgelist_occurance_ill %>% filter(correlation == "positive") %>% select(from, to, value = "absolut_spearman") %>% 
     mutate(type = "occurance_ill_positive"),
-  edgelist_occurance_ont %>% filter(correlation == "positive") %>% select(from, to) %>% 
+  edgelist_occurance_ont %>% filter(correlation == "positive") %>% select(from, to, value = "absolut_spearman") %>% 
     mutate(type = "occurance_ont_positive"),
-  edgelist_occurance_ill %>% filter(correlation == "negative") %>% select(from, to) %>% 
+  edgelist_occurance_ill %>% filter(correlation == "negative") %>% select(from, to, value = "absolut_spearman") %>% 
     mutate(type = "occurance_ill_negative"),
-  edgelist_occurance_ont %>% filter(correlation == "negative") %>% select(from, to) %>% 
+  edgelist_occurance_ont %>% filter(correlation == "negative") %>% select(from, to, value = "absolut_spearman") %>% 
     mutate(type = "occurance_ont_negative")
 )
 
+rm(edgelist_crispr, edgelist_gene_sharing, edgelist_integration_b, edgelist_integration_m, edgelist_non_crispr, edgelist_occurance_ill, edgelist_occurance_ont)
 
-# load crispr cas data ----------------------------------------------------
-
-crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv")
-crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
 # visualize a subcluster surrounding a specific node ----------------------
 
-# CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
-CONTIG_OF_INTEREST <- "Bjer_2_3"
+CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
+# CONTIG_OF_INTEREST <- "Bjer_2_3"
 SAVE_PLOT <- FALSE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
@@ -148,20 +151,20 @@ gvs <- GV_info$shortname
 
 list_of_sequences_to_print <- vphs
 
+# pre calc for each one the same:
+# I had this code chunk, I cant remember why
+# df <- big_connection_df %>% 
+#   filter(!str_detect(type, ".*occurance.*")) %>% 
+#   filter(type != "integration_middle")
+
+graph <- as_tbl_graph(big_connection_df, directed = F)
+graph <- graph %>% 
+  mutate(louvain_group = group_louvain())
 
 for(contig in list_of_sequences_to_print){
   CONTIG_OF_INTEREST <- contig
-  # get a list of ids that are part of the specific subcluster
-  # this first retains only connections which are of a specific type (e.g. "gene_sharing")
-  df <- big_connection_df %>% 
-    filter(!str_detect(type, ".*occurance.*")) %>% 
-    filter(type != "integration_middle")
   
-  
-  graph <- as_tbl_graph(df, directed = F)
-  graph <- graph %>% 
-    mutate(louvain_group = group_louvain())
-  
+  # get the louvain group of the current contig
   target_group <- graph %>% 
     as_tibble() %>% 
     filter(name == CONTIG_OF_INTEREST) %>%
@@ -172,14 +175,14 @@ for(contig in list_of_sequences_to_print){
     next
   }
   
+  # filter the graph to contain only this louvain group
   subgraph <- graph %>%
     filter(louvain_group == target_group)
   
+  # construct df that contains info on all contigs in this subgraph
   small_node_df <- data.table(id = names(V(subgraph)),
                               contig_type = "")
   small_node_df$contig_type <- contig_df$type[match(small_node_df$id, contig_df$contig_id)]
-  
-  # public_ID needs to be added
   small_node_df$public_ID <- small_node_df$id
   small_node_df$public_ID[small_node_df$contig_type == "gv"] <- 
     GV_info$public_ID[match(small_node_df$id[small_node_df$contig_type == "gv"], GV_info$shortname)]
@@ -228,8 +231,9 @@ for(contig in list_of_sequences_to_print){
     activate(nodes) %>%
     mutate(is_focal = (name == CONTIG_OF_INTEREST))
   
-  
-  # layout <- create_layout(g, layout = "fr")
+  # create layout
+  layout <- create_layout(g, layout = "fr")
+  # plot
   ggiraph_plot <- ggraph(layout) +
     geom_edge_link(aes(color = type), show.legend = F) +
     geom_point_interactive(shape = 21,
@@ -296,7 +300,7 @@ for(contig in list_of_sequences_to_print){
   
   
   if(SAVE_PLOT){
-    type_of_contig <- str_remove(contig, "^.*\\_")
+    type_of_contig <- str_remove(CONTIG_OF_INTEREST, "^.*\\_")
     
     if(type_of_contig == "plv" || type_of_contig == "vph"){
       public_ID <- vph_plv_combined_info$public_ID[vph_plv_combined_info$contig_ID == CONTIG_OF_INTEREST]
@@ -475,8 +479,8 @@ for(layer in c(unique(big_connection_df$type), "all")){
 # centrality Figure for maintext ------------------------------------------
 
 # THIS PART IS EXPLORATORY ##########
-SUBSAMPLE_SIZE <- 1
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
+SUBSAMPLE_SIZE <- 0.1
+edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
 edgelist_gene_sharing <- edgelist_gene_sharing %>% 
   mutate(from_type = case_when(
     str_ends(from, "lc")  ~ "lc",

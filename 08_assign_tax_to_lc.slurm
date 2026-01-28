@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=16 # Match the --threads argument for diamond_assign_classficiation.sh
 #SBATCH --time=24:00:00 # Adjust based on expected runtime per file (e.g., 1-12 hours)
 #SBATCH --mem=128G # Adjust based on DIAMOND's memory requirements for the NR database
-#SBATCH --array=1-1 # up to 23
+#SBATCH --array=2-23 # up to 23
 
 # load modules
 module load DIAMOND/2.1.9-GCC-13.2.0
