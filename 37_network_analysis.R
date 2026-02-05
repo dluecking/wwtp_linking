@@ -17,6 +17,15 @@ library(ggiraph)
 library(patchwork)
 library(tibble)
 library(ggsignif)
+library(doParallel)
+library(foreach)
+
+# setup -------------------------------------------------------------------
+
+# cores
+cores_to_use <- 14
+cl <- makeCluster(cores_to_use)
+registerDoParallel(cl)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -100,24 +109,70 @@ edgelist_crispr <- fread("intermediate/network/crispr.csv")
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
-edgelist_occurance_ill <- fread("intermediate/network/occurance_ill.csv") 
-edgelist_occurance_ont <- fread("intermediate/network/occurance_ont.csv")
+edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_3.csv") 
+edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_3.csv")
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
-
-# load crispr cas data ----------------------------------------------------
-
+# crispr data
 crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv") %>% 
   filter(bitscore >= 100)
 crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
-# explore -----------------------------------------------------------------
-# create binary yes/no big list with connection type for each edge
+# quick explore to get to overlap of ill and ont --------------------------
+# add ill edge id and clean df
+edgelist_occurance_ill <- edgelist_occurance_ill %>%
+  mutate(
+    node1 = pmin(from, to),
+    node2 = pmax(from, to),
+    edge_id = paste0(node1, "--", node2)
+  ) %>%
+  select(edge_id, node1, node2, 
+         spearman_ill = spearman_ont, # this is a mistake in another script
+         correlation_ill = correlation) %>%
+  distinct(edge_id, .keep_all = TRUE)
+
+# same for ont
+edgelist_occurance_ont <- edgelist_occurance_ont %>%
+  mutate(
+    node1 = pmin(from, to),
+    node2 = pmax(from, to),
+    edge_id = paste0(node1, "--", node2)
+  ) %>%
+  select(edge_id, node1, node2, 
+         spearman_ont = spearman_ont, 
+         correlation_ont = correlation) %>%
+  distinct(edge_id, .keep_all = TRUE)
+
+# inner join to get only shared edges
+occurance_edges <- edgelist_occurance_ill %>%
+  inner_join(edgelist_occurance_ont, by = c("edge_id", "node1", "node2")) %>%
+  mutate(
+    agree = (correlation_ill == correlation_ont)
+  ) %>%
+  select(edge_id, node1, node2, 
+         spearman_ill, correlation_ill, 
+         spearman_ont, correlation_ont, 
+         agree)
+
+# remove where we are in disagreement (3 edges out of 1.5 million)
+occurance_edges <- occurance_edges %>% filter(agree == "TRUE")
+# create this weird paspte, actually might not be necessary
+occurance_edges$value <- paste0(round(occurance_edges$spearman_ill, 2), "_ill--", round(occurance_edges$spearman_ont, 2), "_ont")
+# rename
+names(occurance_edges) <- c("edge_id", "from", "to", "spearman_ill", "correlation_ill", "spearman_ont", "correlation_ont", "agree", "value") 
+
+a <- occurance_edges %>%
+  filter(!grepl("_lc$", from) | !grepl("_lc$", to))
+
+# prepare single df -------------------------------------------------------
+# create large combined df, edgelist with weighted values
 big_connection_df <- rbind(
   edgelist_crispr %>% select(from, to, value = "crispr") %>% 
     mutate(type = "crispr"),
-  edgelist_gene_sharing %>% select(from, to, value = "gene_sharing") %>% 
+  edgelist_gene_sharing %>% 
+    # filter(gene_sharing >= 0.05) %>% # We do this in the other script that prepares gene sharing
+    select(from, to, value = "gene_sharing") %>% 
     mutate(type = "gene_sharing"),
   edgelist_integration_b %>% select(from, to, value = "integration_b") %>% 
     mutate(type = "integration_boundary"),
@@ -125,41 +180,109 @@ big_connection_df <- rbind(
     mutate(type = "integration_middle"),
   edgelist_non_crispr %>% select(from, to, value = "non_CRISPR") %>% 
     mutate(type = "non_crispr"),
-  edgelist_occurance_ill %>% filter(correlation == "positive") %>% select(from, to, value = "absolut_spearman") %>% 
-    mutate(type = "occurance_ill_positive"),
-  edgelist_occurance_ont %>% filter(correlation == "positive") %>% select(from, to, value = "absolut_spearman") %>% 
-    mutate(type = "occurance_ont_positive"),
-  edgelist_occurance_ill %>% filter(correlation == "negative") %>% select(from, to, value = "absolut_spearman") %>% 
-    mutate(type = "occurance_ill_negative"),
-  edgelist_occurance_ont %>% filter(correlation == "negative") %>% select(from, to, value = "absolut_spearman") %>% 
-    mutate(type = "occurance_ont_negative")
+  occurance_edges %>%
+    filter(correlation_ont == "positive") %>% 
+    select(from, to, value = value) %>% 
+    mutate(type = "occurance_positive"),
+  occurance_edges %>%
+    filter(correlation_ont == "negative") %>% 
+    select(from, to, value = value) %>% 
+    mutate(type = "occurance_negative")
 )
 
 rm(edgelist_crispr, edgelist_gene_sharing, edgelist_integration_b, edgelist_integration_m, edgelist_non_crispr, edgelist_occurance_ill, edgelist_occurance_ont)
+rm(occurance_edges)
+
+# create unique edge id
+big_connection_df_filtered <- big_connection_df %>%
+  mutate(edge_id = paste0(pmin(from, to), "--", pmax(from, to)))
+
+# keep only one row per edge_id + type (removes duplicate connections but we lose info on weightedness)
+big_connection_df_filtered <- big_connection_df_filtered %>% 
+  dplyr::distinct(edge_id, type, .keep_all = TRUE)
+
+rm(big_connection_df)
 
 
+# test weird community structure ------------------------------------------
+
+res <- list()
+
+for(t in c(unique(big_connection_df_filtered$type), "none")){
+  if(t != "none"){
+    graph <- as_tbl_graph(big_connection_df_filtered %>% filter(type != t), directed = FALSE)
+  } else {
+    graph <- as_tbl_graph(big_connection_df_filtered, directed = FALSE)
+  }
+  graph <- graph %>%
+    mutate(louvain_group = group_louvain())
+  a <- as.data.table(table(V(graph)$louvain_group))
+  setnames(a, c("V1", "N"), c("group", "count"))
+  a[, group := as.integer(group)]
+  a[, removed_type := t]
+  res[[t]] <- a
+}
+dt <- rbindlist(res)
+
+ecdf_plot <- ggplot(dt, aes(x = count, colour = removed_type)) +
+  stat_ecdf() +
+  scale_x_log10() +
+  theme_minimal() +
+  labs(
+    x = "Community size (log scale)",
+    y = "ECDF",
+    title = "Distribution of Louvain community sizes"
+  )
+ggsave(plot = ecdf_plot, filename = "testing/louvain_plots/ecdf.png")
+
+multi_plot <- ggplot(dt, aes(x = group, y = count)) +
+  geom_col() +
+  facet_wrap(~ removed_type, scales = "free_x") +
+  theme_minimal() +
+  labs(
+    x = "Louvain group",
+    y = "Number of contigs",
+    title = "Louvain community size distributions",
+    subtitle = "Panel = this has been removed"
+  ) +
+  theme(
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank()
+  )
+ggsave(plot = multi_plot, filename = "testing/louvain_plots/multipanel.png")
+
+
+# test resolutions of network:
+for(res in c(0.5, 1.0, 1.5, 2.0, 3.0)) {
+  communities <- cluster_louvain(graph, resolution = res)
+  sizes <- table(membership(communities))
+  
+  cat("\nResolution:", res, "\n")
+  cat("  N communities:", length(sizes), "\n")
+  cat("  Largest:", max(sizes), "nodes\n")
+  cat("  Communities 10-500 nodes:", sum(sizes >= 10 & sizes <= 500), "\n")
+  cat("  Singletons:", sum(sizes == 1), "\n")
+}
 
 # visualize a subcluster surrounding a specific node ----------------------
 
-CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
-# CONTIG_OF_INTEREST <- "Bjer_2_3"
-SAVE_PLOT <- FALSE
+# CONTIG_OF_INTEREST <- "AalE_tig00021708-10-192480_vph" # thats the good one
+CONTIG_OF_INTEREST <- "Bjer_2_3"
+SAVE_PLOT <- TRUE
 
+# this is only for batch creation of plots:
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
 vphs <- str_remove(list.files("intermediate/contigs/vph"), "\\.fna")
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- vphs
+list_of_sequences_to_print <- plvs
 
-# pre calc for each one the same:
-# I had this code chunk, I cant remember why
-# df <- big_connection_df %>% 
-#   filter(!str_detect(type, ".*occurance.*")) %>% 
-#   filter(type != "integration_middle")
 
-graph <- as_tbl_graph(big_connection_df, directed = F)
+# this is creating the graph and groups
+graph <- as_tbl_graph(big_connection_df_filtered, directed = F)
 graph <- graph %>% 
-  mutate(louvain_group = group_louvain())
+  mutate(louvain_group = group_louvain(resolution = 3))
+
 
 for(contig in list_of_sequences_to_print){
   CONTIG_OF_INTEREST <- contig
@@ -172,6 +295,7 @@ for(contig in list_of_sequences_to_print){
   
   # if this is not in any subcluster, we can skip it
   if(identical(target_group, integer(0))){
+    cat("This one is NOT in a group:", CONTIG_OF_INTEREST, "\n")
     next
   }
   
@@ -182,6 +306,17 @@ for(contig in list_of_sequences_to_print){
   # construct df that contains info on all contigs in this subgraph
   small_node_df <- data.table(id = names(V(subgraph)),
                               contig_type = "")
+  
+  
+  # if this subgraph is too large (1k for now) then skip
+  if(nrow(small_node_df) >= 500){
+    cat("This one was too big:", CONTIG_OF_INTEREST, "\n")
+    cat("With this many nodes:", nrow(small_node_df), "\n")
+    next
+  }
+    
+    
+    
   small_node_df$contig_type <- contig_df$type[match(small_node_df$id, contig_df$contig_id)]
   small_node_df$public_ID <- small_node_df$id
   small_node_df$public_ID[small_node_df$contig_type == "gv"] <- 
@@ -214,7 +349,7 @@ for(contig in list_of_sequences_to_print){
   
   # then subset the big df, so we retain only edges of nodes that are part of the 
   # group
-  small_edge_df <- big_connection_df %>%
+  small_edge_df <- big_connection_df_filtered %>%
     filter(from %in% small_node_df$id & to %in% small_node_df$id)
   
   g <- graph_from_data_frame(small_edge_df, directed = F, small_node_df)
@@ -226,7 +361,7 @@ for(contig in list_of_sequences_to_print){
   
   g <- as_tbl_graph(g)
   
-  # CHANGE HERE!
+  # highlight the current contig int the plot
   g <- g %>%
     activate(nodes) %>%
     mutate(is_focal = (name == CONTIG_OF_INTEREST))
@@ -296,7 +431,7 @@ for(contig in list_of_sequences_to_print){
     )
   
   interactive_plot <- girafe(ggobj = ggiraph_plot)
-  interactive_plot
+  # interactive_plot
   
   
   if(SAVE_PLOT){
@@ -332,9 +467,7 @@ for(contig in list_of_sequences_to_print){
 
 # check scale free and other stats ----------------------------------------
 
-g <- graph_from_data_frame(big_connection_df)
-
-g <- graph_from_data_frame(d = big_connection_df, 
+g <- graph_from_data_frame(d = big_connection_df_filtered, 
                            directed = FALSE, 
                            vertices = contig_df)
 
@@ -350,7 +483,7 @@ degree_counts$k <- as.numeric(as.character(degree_counts$k))
 degree_counts <- degree_counts[order(degree_counts$k, decreasing = TRUE), ]
 degree_counts$cumulative_prob <- cumsum(degree_counts$Freq) / sum(degree_counts$Freq)
 
-# 2. Plot with ggplot2
+# plot
 ggplot(degree_counts, aes(x = k, y = cumulative_prob)) +
   geom_point(alpha = 0.6, color = "steelblue") +
   scale_x_log10() + 
@@ -387,26 +520,26 @@ comp <- compare_distributions(m_pl, m_ln)
 comp$test_statistic # Positive = Power law is better; Negative = Log-normal is better
 comp$p_two_sided
 
-
-
-
-# does contig length correlate with K (number of connections?) ------------
-
-deg <- degree(g, mode = "all")
-
-
+rm(d, d_positive, g)
 
 
 # centrality --------------------------------------------------------------
 
+g <- graph_from_data_frame(d = big_connection_df_filtered, 
+                           directed = FALSE, 
+                           vertices = contig_df)
+
+# if you want a single layer
+layer <- "all"
+
 # we need to do this for each layer seperately and then one combined:
-for(layer in c(unique(big_connection_df$type), "all")){
+for(layer in c(unique(big_connection_df_filtered$type), "all")){
   print(layer)
   
   if(layer == "all"){
-    g <- graph_from_data_frame(big_connection_df)
+    g <- graph_from_data_frame(big_connection_df_filtered)
   }else{
-    g <- graph_from_data_frame(big_connection_df %>% filter(type == layer))
+    g <- graph_from_data_frame(big_connection_df_filtered %>% filter(type == layer))
   }
   
   deg <- degree(g, mode = "all")
@@ -478,10 +611,29 @@ for(layer in c(unique(big_connection_df$type), "all")){
 
 # centrality Figure for maintext ------------------------------------------
 
-# THIS PART IS EXPLORATORY ##########
-SUBSAMPLE_SIZE <- 0.1
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
-edgelist_gene_sharing <- edgelist_gene_sharing %>% 
+# SUBSAMPLE_SIZE <- 0.1
+# edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
+# edgelist_gene_sharing <- edgelist_gene_sharing %>% 
+#   mutate(from_type = case_when(
+#     str_ends(from, "lc")  ~ "lc",
+#     str_ends(from, "vph") ~ "vph",
+#     str_ends(from, "plv") ~ "plv",
+#     TRUE ~ "gv"
+#   )) %>% 
+#   mutate(to_type = case_when(
+#     str_ends(to, "lc")  ~ "lc",
+#     str_ends(to, "vph") ~ "vph",
+#     str_ends(to, "plv") ~ "plv",
+#     TRUE ~ "gv"
+#   ))
+# 
+# big_connection_df <- edgelist_gene_sharing %>% select(from, to) %>% 
+#   mutate(type = "gene_sharing") %>% 
+#   sample_n(size = nrow(edgelist_gene_sharing) * SUBSAMPLE_SIZE)
+
+
+# add contig type info
+big_connection_df_filtered <- big_connection_df_filtered %>% 
   mutate(from_type = case_when(
     str_ends(from, "lc")  ~ "lc",
     str_ends(from, "vph") ~ "vph",
@@ -495,47 +647,8 @@ edgelist_gene_sharing <- edgelist_gene_sharing %>%
     TRUE ~ "gv"
   ))
 
-big_connection_df <- edgelist_gene_sharing %>% select(from, to) %>% 
-  mutate(type = "gene_sharing") %>% 
-  sample_n(size = nrow(edgelist_gene_sharing) * SUBSAMPLE_SIZE)
-
-
-
-g <- graph_from_data_frame(big_connection_df %>% filter(type == "gene_sharing"))
-
-deg <- degree(g, mode = "all")
-btw <- betweenness(g, directed = FALSE, normalized = TRUE)
-
-deg_df <- enframe(deg, name = "contig_id", value = "degree")
-btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
-
-network_df <- left_join(deg_df, btw_df)
-network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
-
-# add the information: is the lc connected to a gv or not?
-# for(i in 1:nrow(network_df)){
-#   if(i %% 100 == 0){
-#     print(i)
-#   }
-#   current_lc <- network_df$contig_id[i]
-#   
-#   # this only applies to LCs, skip if non-lc
-#   if(!str_ends(current_lc, "\\_lc$")){
-#     next
-#   }
-#   
-#   # else check if we are connected to a GV though gene sharing
-#   tmp_df <- edgelist_gene_sharing %>% 
-#     filter(from == current_lc | to == current_lc)
-#   
-#   if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
-#     network_df$contig_type[i] <- "lc_gv_connected"
-#   }
-#   
-# }
-
-# First find all LC contigs that are connected to a GV
-lc_gv_connected <- edgelist_gene_sharing %>%
+# find all LC contigs that are connected to a GV
+lc_gv_connected <- big_connection_df_filtered %>%
   filter(from_type == "gv" | to_type == "gv") %>%   # only GV edges
   mutate(lc = case_when(
     str_ends(from, "_lc") ~ from,
@@ -545,6 +658,34 @@ lc_gv_connected <- edgelist_gene_sharing %>%
   filter(!is.na(lc)) %>%
   distinct(lc) %>%
   pull(lc)
+
+g <- graph_from_data_frame(big_connection_df_filtered)
+
+deg <- degree(g, mode = "all")
+btw <- betweenness(g, directed = FALSE, normalized = TRUE, cutoff = 5)
+
+
+# new estimate of betweenness using multiple cores and estimate only
+# Split vertices into chunks for parallel processing
+n_vertices <- vcount(g)
+vertex_chunks <- split(1:n_vertices, cut(1:n_vertices, breaks = cores_to_use, labels = FALSE))
+
+# Parallel computation
+btw_list <- foreach(chunk = vertex_chunks, 
+                    .packages = "igraph",
+                    .combine = c) %dopar% {
+                      estimate_betweenness(g, v = chunk, directed = FALSE, cutoff = 5)
+                    }
+
+# btw_list now contains betweenness values for all vertices
+btw <- btw_list
+
+
+deg_df <- enframe(deg, name = "contig_id", value = "degree")
+btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
+
+network_df <- left_join(deg_df, btw_df)
+network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
 
 # Update network_df$contig_type if contig_id is in that set
 network_df <- network_df %>%
@@ -561,7 +702,7 @@ deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_ty
   geom_boxplot() +
   geom_signif(
     comparisons = list(c("lc", "lc_gv_connected"), c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
-    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
   scale_y_log10() +
   labs(
     title = "Degree Distribution",
@@ -589,7 +730,7 @@ bet_plot <- ggplot(network_df, aes(x = contig_type, y = betweeness, fill = conti
   geom_boxplot() +
   geom_signif(
     comparisons = list(c("lc", "lc_gv_connected"), c("lc", "gv")),
-    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15,) +
+    map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
   scale_y_log10() +
   labs(
     title = "Betweenness Distribution",
@@ -616,60 +757,6 @@ ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connect
 ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connected_vs_others.pdf", width = 7, height = 4)
 ggsave(plot = p, file = "final/centrality_plots/gene_sharing_lc_vs_lc-gv-connected_vs_others.svg", width = 7, height = 4)
 
-
-# gene sharing centrality -------------------------------------------------
-# the idea is: lcs which are connected to GVs are on average connected more to other entities, than LCs that are not connected to GVs
-# this goes to SUPP, but the idea is built in the figure above
-# 
-# edgelist_gene_sharing <- fread("intermediate/network/gene_sharing_only_interesting.csv")
-# 
-# all_strings <- c(edgelist_gene_sharing$from, edgelist_gene_sharing$to)
-# all_lcs <- unique(all_strings[str_ends(all_strings, "lc")])
-# 
-# lc_df <- data.table(contig = all_lcs,
-#                     connections = 0,
-#                     is_GV_connected = FALSE)
-# 
-# for(i in 1:nrow(lc_df)){
-#   # which lc are we looking at?
-#   current_LC <- lc_df$contig[i]
-#   
-#   # filter to only retain tmp with this lc
-#   tmp_df <- edgelist_gene_sharing %>% 
-#     filter(from == current_LC | to == current_LC)
-#   
-#   # is there a gv connected to the lc?
-#   if(any(tmp_df$from_type == "gv" | tmp_df$to_type == "gv")){
-#     lc_df$is_GV_connected[i] <- TRUE
-#   }
-#   
-#   # how many unique connections do we count?
-#   tmp_df <- tmp_df %>%
-#     rowwise() %>%
-#     mutate(connection = paste(sort(c(from, to)), collapse = "-"))
-#   
-#   lc_df$connections[i]  <- n_distinct(tmp_df$connection)
-# }
-# 
-# p <- ggplot(lc_df, aes(x = is_GV_connected, y = connections, fill = is_GV_connected)) +
-#   geom_signif(
-#     comparisons = list(c("FALSE", "TRUE")),
-#     map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
-#   geom_boxplot() +
-#   theme_cowplot() +
-#   theme(legend.position = "None") +
-#   ylim(c(0,NA)) +
-#   scale_y_log10() +
-#   scale_x_discrete(labels = c("not-connected", "GV-connected")) +
-#   scale_fill_manual(values = c("FALSE" = "grey", "TRUE" = "steelblue")) +
-#   ggtitle(label = "Gene Sharing Comparison",
-#           subtitle = "Number of connections of gv-connected vs non-connected LCs") +
-#   ylab("# of gene sharing connections") +
-#   xlab("")
-# 
-# ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.svg", height = 6, width = 6)
-# ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.pdf", height = 6, width = 6)
-# ggsave(plot = p, file = "final/centrality_plots/gv_vs_non-gv-connected_LCs.png", height = 6, width = 6)
 
 
 
@@ -739,117 +826,8 @@ fwrite(VIRUS_HOST_df, "tmp_V_H_pairs.csv")
 
 
 
-# PLVs and VPHs -----------------------------------------------------------
-
-plv_df <- big_connection_df %>% 
-  filter(str_detect(from, "vph") | str_detect(to, "vph"))
 
 
-
-# multi_connection_pairs <- big_connection_df %>%
-#   filter(!str_detect(type, "negative")) %>% 
-#   group_by(from, to) %>%
-#   summarise(
-#     unique_connection_types = n_distinct(type)
-#   ) %>%
-#   ungroup() %>% # Ungroup to remove grouping structure
-#   filter(unique_connection_types >= 1)
-# 
-# 
-# # now add information about type
-# multi_connection_pairs$from_type <- contig_df$type[match(multi_connection_pairs$from, contig_df$contig_id)]
-# multi_connection_pairs$to_type <- contig_df$type[match(multi_connection_pairs$to, contig_df$contig_id)]
-# 
-# 
-# multi_connection_pairs$connection_type <- paste0(multi_connection_pairs$from_type, "-", multi_connection_pairs$to_type)
-# 
-# # fix the reverse
-# multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "gv-lc"] <- "lc-gv"
-# multi_connection_pairs$connection_type[multi_connection_pairs$connection_type == "plv-lc"] <- "lc-plv"
-# 
-# # filter for only virus-host-pairs
-# virus_host_pairs <- multi_connection_pairs %>% 
-#   filter(connection_type == "lc-gv")
-# 
-# 
-# GVs_with_host <- unique(c(virus_host_pairs$from, virus_host_pairs$to))
-# GVs_with_host <- GVs_with_host[!grepl("lc$", GVs_with_host)]
-
-
-
-
-# # try my own little grpah with only ill to see how it looks ---------------
-# 
-# df <- big_connection_df %>% filter(type == "gene_sharing")
-# graph <- as_tbl_graph(df, directed = F)
-# V(graph)$type <- contig_df$type[match(V(graph)$name, contig_df$contig_id)]
-# V(graph)$color <- contig_df$color[match(V(graph)$name, contig_df$contig_id)]
-# 
-# 
-# standart_layout <- create_layout(graph, layout = "fr")
-# 
-# ggraph(standart_layout) +
-#   geom_edge_link(alpha = 0.5) +
-#   geom_node_point(aes(colour = type))
-# 
-# # focus on one group
-# graph <- graph %>% 
-#   mutate(louvain_group = group_louvain())
-# 
-# target_group <- graph %>% 
-#   as_tibble() %>% 
-#   filter(name == "Aved_tig00303955-10-54120_vph") %>% 
-#   pull(louvain_group)
-# 
-# 
-# subgraph <- graph %>%
-#   filter(louvain_group == target_group)
-# 
-# ggraph(subgraph, layout = "fr") +
-#   geom_edge_link(alpha = 0.5) +
-#   geom_node_point(aes(colour = type))
-# 
-# 
-# # test visnetwork for nice layouts
-# nodes <- data.table(id = names(V(subgraph)))
-# edges <- edgelist_gene_sharing %>% filter(from %in% names(V(subgraph)), to %in% names(V(subgraph))) %>% 
-#   select(from, to)
-# visNetwork::visNetwork(nodes, edges)
-# visNetwork::visNetwork(nodes, edges) %>% 
-#   visNetwork::visIgraphLayout(layout = "layout_with_fr") %>% 
-#   visNetwork::visEdges(arrows = "middle")
-# 
-# 
-# 
-# 
-# 
-# 
-# # how many unique nodes are in all of the layers?
-# for(t in unique(big_connection_df$type)){
-#   print(t)
-#   a <- big_connection_df %>% 
-#     filter(type == t) %>% 
-#     select(from, to) %>% 
-#     unlist() %>% 
-#     unique() %>% 
-#     length()
-#   print(a)
-#   
-# } 
-# 
-# 
-# 
-# 
-# 
-# 
-# g_occ_ill <- graph_from_data_frame(edgelist_occurance_ill %>% filter(correlation == "positive") %>% select(from, to, spearman_ont))
-# 
-# V(g_occ_ill)$type <- contig_df$type[match(V(g_occ_ill)$name, contig_df$contig_id)]
-# V(g_occ_ill)$color <- contig_df$color[match(V(g_occ_ill)$name, contig_df$contig_id)]
-# 
-# ggraph(g_occ_ill) +
-#   geom_edge_link() +
-#   geom_node_point()
 
 
 
