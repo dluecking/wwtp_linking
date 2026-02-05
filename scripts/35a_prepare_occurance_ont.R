@@ -129,7 +129,7 @@ cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 # the idea is: if you are only present in very few samples, you create noise
 
 X_threshold <- 1.0 # Replace with your desired minimum value (X)
-Y_columns <- 12     # Replace with your desired minimum number of columns (Y)
+Y_columns <- 3     # Replace with your desired minimum number of columns (Y)
 
 # Assuming 'occurance_filtered' is your data frame
 
@@ -198,14 +198,85 @@ cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 
 # prepare for network -----------------------------------------------------
+# this part runs into an integer overflow, so we adjusted by running blocks:
 
-# remove duplicate information
-cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
 
-# prepare for from to network
-edge_list <- as.data.frame(as.table(cor_matrix)) %>%
-  na.omit() %>%
-  rename(from = Var1, to = Var2, spearman_ont = Freq)
+# # remove duplicate information
+# cor_matrix[upper.tri(cor_matrix, diag = TRUE)] <- NA
+# 
+# # prepare for from to network
+# edge_list <- as.data.frame(as.table(cor_matrix)) %>%
+#   na.omit() %>%
+#   rename(from = Var1, to = Var2, spearman_ont = Freq)
+
+# prepare for network -----------------------------------------------------
+
+cat("[INFO] Converting correlation matrix to edge list (memory-efficient approach)...\n")
+
+# Get dimensions
+n_contigs <- nrow(cor_matrix)
+contig_names <- rownames(cor_matrix)
+
+# Pre-filter: only keep edges above threshold to save memory
+SPEARMAN_CUTOFF <- 0.60
+
+# Process in chunks to avoid memory issues
+chunk_size <- 1000
+edge_list_chunks <- list()
+
+for(start_idx in seq(1, n_contigs, by = chunk_size)) {
+  end_idx <- min(start_idx + chunk_size - 1, n_contigs)
+  
+  cat(sprintf("[INFO] Processing contigs %d to %d of %d...\n", 
+              start_idx, end_idx, n_contigs))
+  
+  # Extract chunk of correlation matrix (rows = current chunk, cols = all contigs up to current row)
+  chunk_mat <- cor_matrix[start_idx:end_idx, , drop = FALSE]
+  
+  # For each row in chunk, check all columns that come BEFORE this contig (lower triangle only)
+  chunk_edges <- foreach(i = start_idx:end_idx, .combine = rbind) %do% {
+    row_idx <- i - start_idx + 1
+    
+    # Only look at columns before this row (lower triangle to avoid duplicates)
+    # This ensures we capture ALL pairwise comparisons exactly once
+    if(i > 1) {
+      cols_to_check <- 1:(i-1)  # All contigs with index < current contig
+      correlations <- chunk_mat[row_idx, cols_to_check]
+      abs_cors <- abs(correlations)
+      
+      # Pre-filter by threshold
+      keep <- abs_cors >= SPEARMAN_CUTOFF
+      
+      if(any(keep)) {
+        data.frame(
+          from = contig_names[i],
+          to = contig_names[cols_to_check[keep]],
+          spearman_ont = correlations[keep],
+          stringsAsFactors = FALSE
+        )
+      } else {
+        NULL
+      }
+    } else {
+      NULL
+    }
+  }
+  
+  if(!is.null(chunk_edges) && nrow(chunk_edges) > 0) {
+    edge_list_chunks[[length(edge_list_chunks) + 1]] <- chunk_edges
+  }
+  
+  # Clean up
+  rm(chunk_mat, chunk_edges)
+  gc()
+}
+
+# Combine all chunks
+edge_list <- rbindlist(edge_list_chunks)
+
+cat("[INFO] Created edge list with", nrow(edge_list), "edges\n")
+cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
+
 
 edge_list$absolut_spearman <- abs(edge_list$spearman_ont)
 edge_list <- edge_list %>% 
@@ -238,6 +309,6 @@ cat(paste0("[INFO] Size of edge_list AFTER filtereing above threshold: ", nrow(e
 
 # save that to a file -----------------------------------------------------
 
-fwrite(edge_list_rmt, "intermediate/network/occurance_ont.csv")
-cat("[INFO] final edgelist saved to: intermediate/network/occurance_ont.csv")
+fwrite(edge_list_rmt, paste0("intermediate/network/occurance_ont_", Y_columns,".csv"))
+cat("[INFO] final edgelist saved to: ", paste0("intermediate/network/occurance_ont_", Y_columns,".csv"))
 cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")

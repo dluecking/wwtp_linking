@@ -129,7 +129,7 @@ cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 # the idea is: if you are only present in very few samples, you create noise
 
 X_threshold <- 1.0 # Replace with your desired minimum value (X)
-Y_columns <- 12     # Replace with your desired minimum number of columns (Y)
+Y_columns <- 3     # Replace with your desired minimum number of columns (Y)
 
 # Assuming 'occurance_filtered' is your data frame
 
@@ -238,6 +238,6 @@ cat(paste0("[INFO] Size of edge_list AFTER filtereing above threshold: ", nrow(e
 
 # save that to a file -----------------------------------------------------
 
-fwrite(edge_list_rmt, "intermediate/network/occurance_ill.csv")
-cat("[INFO] final edgelist saved to: intermediate/network/occurance_ill.csv", "\n")
+fwrite(edge_list_rmt, paste0("intermediate/network/occurance_ill_", Y_columns,".csv"))
+cat("[INFO] final edgelist saved to: ", paste0("intermediate/network/occurance_ill_", Y_columns,".csv"))
 cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")

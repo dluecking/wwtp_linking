@@ -13,6 +13,9 @@ library(stringr)
 setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
 
 
+# what fraction of genes needs to be shared so I keep it?
+CUTOFF <- 0.05 # this is 5% right now
+
 # load blastp output ------------------------------------------------------
 
 blast_out <- fread("intermediate/blastp/all_vs_all_blastp.tsv")
@@ -59,7 +62,7 @@ protein_numbers <- as.data.table(table(protein_accessions$contig_id))
 summary_table$genes_per_contig <- protein_numbers$N[match(summary_table$from, protein_numbers$V1)]
 summary_table$gene_sharing <- summary_table$genes_shared / summary_table$genes_per_contig
 
-fwrite(summary_table %>% select(from, to, gene_sharing), file = "intermediate/network/gene_sharing.csv")
+fwrite(summary_table %>% filter(gene_sharing >= CUTOFF) %>% select(from, to, gene_sharing), file = "intermediate/network/gene_sharing.csv")
 
 
 
