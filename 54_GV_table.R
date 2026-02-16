@@ -10,6 +10,7 @@ library(stringr)
 library(tidyverse)
 library(gt)
 library(gtExtras)
+library(googlesheets4)
 
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -111,7 +112,7 @@ gv_table <- gv_data %>%
   select(
     public_ID, personal_assessment_order, completeness,
     length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, 
-    crispr_array, crispr_cas,
+    crispr_array, # crispr_cas,
     tRNA, tRNA_list
   ) %>%
   gt() %>%
@@ -125,11 +126,11 @@ gv_table <- gv_data %>%
     after = length
   ) %>%
   
-  # move the crispr cas after the cas array
-  cols_move(
-    columns = crispr_cas,
-    after = crispr_array
-  ) %>%
+  # # move the crispr cas after the cas array
+  # cols_move(
+  #   columns = crispr_cas,
+  #   after = crispr_array
+  # ) %>%
   
   data_color(
     columns = gc,
@@ -169,8 +170,8 @@ gv_table <- gv_data %>%
     tRNA = "# tRNAs",
     tRNA_list = "tRNA sequences",
     padloc = "Defensive System",
-    crispr_array = "# CRISPR Spacers",
-    crispr_cas = "CRISPR-Cas Genes"
+    crispr_array = "# CRISPR Spacers"
+    # crispr_cas = "CRISPR-Cas Genes"
   ) %>%
   
   fmt_missing(columns = everything(), missing_text = "-") %>%

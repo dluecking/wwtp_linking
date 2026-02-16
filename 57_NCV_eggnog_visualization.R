@@ -67,16 +67,17 @@ p1 <- ggplot(overview_df, aes(x = "", y = count, fill = type)) +
   scale_y_continuous(labels = scales::percent) +
   theme_cowplot() +
   theme(axis.ticks.x = element_blank(),
-        legend.position = "bottom")
+        legend.position = "none")
 
  
 
 # order the description
 factor_levels <- c("Translation, ribosomal structure and biogenesis", "RNA processing and modification", "Transcription", "Replication, recombination and repair", "Chromatin structure and dynamics", "Cell cycle control, cell division, chromosome partitioning", "Nuclear structure", "Defense mechanisms", "Signal transduction mechanisms", "Cell wall/membrane/envelope biogenesis", "Cell motility", "Cytoskeleton", "Extracellular structures", "Intracellular trafficking, secretion, and vesicular transport", "Posttranslational modification, protein turnover, chaperones", "Energy production and conversion", "Carbohydrate transport and metabolism", "Amino acid transport and metabolism", "Nucleotide transport and metabolism", "Coenzyme transport and metabolism", "Lipid transport and metabolism", "Inorganic ion transport and metabolism", "Secondary metabolites biosynthesis, transport and catabolism")
+labels <- c("Translation, ribosomal structure and biogenesis [J]", "RNA processing and modification [A]", "Transcription [K]", "Replication, recombination and repair [L]", "Chromatin structure and dynamics [B]", "Cell cycle control, cell division, chromosome partitioning [D]", "Nuclear structure [Y]", "Defense mechanisms [V]", "Signal transduction mechanisms [T]", "Cell wall/membrane/envelope biogenesis [M]", "Cell motility [N]", "Cytoskeleton [Z]", "Extracellular structures [W]", "Intracellular trafficking, secretion, and vesicular transport [U]", "Posttranslational modification, protein turnover, chaperones [O]", "Energy production and conversion [C]", "Carbohydrate transport and metabolism [G]", "Amino acid transport and metabolism [E]", "Nucleotide transport and metabolism [F]", "Coenzyme transport and metabolism [H]", "Lipid transport and metabolism [I]", "Inorganic ion transport and metabolism [P]", "Secondary metabolites biosynthesis, transport and catabolism [Q]")
 
 # Convert the column to a factor with the specified levels
 p2 <- ggplot(eggnog_df %>%
-               mutate(desc_short = factor(desc_short, levels = factor_levels)) %>% 
+               mutate(desc_short = factor(desc_short, levels = factor_levels, labels = labels)) %>% 
                filter(!COG_category %in% c("R", "S", "RS", "SR", "-", "NA")) %>%
                filter(!is.na(desc_short)),
              aes(x = desc_short)) +
@@ -84,7 +85,8 @@ p2 <- ggplot(eggnog_df %>%
   ylab("Count") +
   xlab(NULL) +
   theme_cowplot() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8))
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8),
+        legend.position = "None") 
 
 p_combined <- p1 + p2 + plot_layout(widths = c(1, 6))  
 p_combined

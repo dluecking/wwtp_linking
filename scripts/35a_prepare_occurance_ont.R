@@ -126,23 +126,53 @@ cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 
 # remove contigs for which we have a weak signal --------------------------
-# the idea is: if you are only present in very few samples, you create noise
+# Stratified filtering: different thresholds for abundant vs rare elements
 
-X_threshold <- 1.0 # Replace with your desired minimum value (X)
-Y_columns <- 3     # Replace with your desired minimum number of columns (Y)
+X_threshold <- 1.0  # Minimum coverage value to count as "present"
 
-# Assuming 'occurance_filtered' is your data frame
-
-occurance_filtered <- occurance_df %>%
-  rowwise() %>% # Process row by row
+# Add contig type classification
+occurance_df <- occurance_df %>%
   mutate(
-    # Count how many non-contig_id columns have a value > X_threshold
-    count_above_X = sum(c_across(-contig_id) > X_threshold, na.rm = TRUE)
-  ) %>%
-  filter(count_above_X >= Y_columns) %>% # Keep rows where the count is at least Y_columns
-  select(-count_above_X) # Remove the temporary count_above_X column if not needed
+    contig_type = case_when(
+      str_ends(contig_id, "lc")  ~ "lc",
+      str_ends(contig_id, "vph") ~ "vph",
+      str_ends(contig_id, "plv") ~ "plv",
+      TRUE ~ "gv"
+    )
+  )
 
-cat("[INFO] filtered occurance DF!\n")
+# Apply stratified filtering
+occurance_filtered <- occurance_df %>%
+  rowwise() %>%
+  mutate(
+    # Count how many samples have coverage > X_threshold
+    count_above_X = sum(c_across(-c(contig_id, contig_type)) > X_threshold, na.rm = TRUE),
+    # Different thresholds based on element type
+    min_samples = case_when(
+      contig_type == "lc" ~ 12,   # Abundant chromosomal elements
+      TRUE ~ 1                     # Rare mobile elements (VPH, PLV, GV)
+    )
+  ) %>%
+  filter(count_above_X >= min_samples) %>%
+  select(-c(count_above_X, min_samples, contig_type))
+
+cat("[INFO] Stratified filtering applied:\n")
+cat("  - LCs: presence in ≥12 samples required\n")
+cat("  - VPHs/PLVs/GVs: presence in ≥1 sample required\n")
+
+# Report filtering results by type
+n_lc <- sum(str_ends(occurance_filtered$contig_id, "lc"))
+n_vph <- sum(str_ends(occurance_filtered$contig_id, "vph"))
+n_plv <- sum(str_ends(occurance_filtered$contig_id, "plv"))
+n_gv <- sum(!str_ends(occurance_filtered$contig_id, "lc|vph|plv"))
+
+cat("[INFO] Contigs retained after filtering:\n")
+cat("  - LCs:", n_lc, "\n")
+cat("  - VPHs:", n_vph, "\n")
+cat("  - PLVs:", n_plv, "\n")
+cat("  - GVs:", n_gv, "\n")
+cat("  - Total:", nrow(occurance_filtered), "\n")
+
 cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")
 
 
@@ -309,6 +339,6 @@ cat(paste0("[INFO] Size of edge_list AFTER filtereing above threshold: ", nrow(e
 
 # save that to a file -----------------------------------------------------
 
-fwrite(edge_list_rmt, paste0("intermediate/network/occurance_ont_", Y_columns,".csv"))
-cat("[INFO] final edgelist saved to: ", paste0("intermediate/network/occurance_ont_", Y_columns,".csv"))
+fwrite(edge_list_rmt, paste0("intermediate/network/occurance_ont_strat.csv"))
+cat("[INFO] final edgelist saved to: ", paste0("intermediate/network/occurance_ont_strat.csv"))
 cat("[TIME] Elapsed:", format(Sys.time() - start_time), "\n")

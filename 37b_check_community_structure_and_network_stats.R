@@ -13,6 +13,7 @@ library(poweRlaw)
 
 # Setup -------------------------------------------------------------------
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
 
 # Create output directories
 dir.create("intermediate/network/network_analysis/louvain_plots", recursive = TRUE, showWarnings = FALSE)
@@ -22,10 +23,46 @@ dir.create("intermediate/network/network_analysis/scale_free_analysis", recursiv
 # Load prepared data ------------------------------------------------------
 big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv")
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
+membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership_005.csv")
 
-cat("Loaded data:\n")
-cat("  - Edges:", nrow(big_connection_df_filtered), "\n")
-cat("  - Nodes:", nrow(contig_df), "\n\n")
+
+# Create cluster-level node dataframe ------------------------------------
+cat("Creating cluster-level node dataframe...\n")
+
+# Remove polypolish suffix from membership
+membership_df$contig_id <- str_remove(membership_df$contig_id, "\\spolypolish")
+membership_df$cluster_id <- str_remove(membership_df$cluster_id, "\\spolypolish")
+
+# Create nodes_df for graph construction
+nodes_df <- contig_df %>%
+  left_join(membership_df %>% select(contig_id, cluster_id, cluster_size), 
+            by = "contig_id") %>%
+  # Use cluster_id where available, otherwise keep original
+  mutate(
+    node_id = ifelse(!is.na(cluster_id), cluster_id, contig_id),
+    original_contig_id = contig_id  # Keep original
+  ) %>%
+  # CRITICAL: Keep only ONE row per node_id (first occurrence)
+  distinct(node_id, .keep_all = TRUE) %>%
+  # Rename for igraph compatibility
+  select(-contig_id) %>%
+  rename(contig_id = node_id)
+
+# Update type for LC clusters
+nodes_df <- nodes_df %>%
+  mutate(
+    type = case_when(
+      grepl("LC_CLUSTER", contig_id) ~ "lc",
+      str_ends(contig_id, "vph") ~ "vph",
+      str_ends(original_contig_id, "lc")  ~ "lc",
+      str_ends(contig_id, "plv") ~ "plv",
+      TRUE ~ "gv"
+    )
+  )
+
+# make sure contig_id is early:
+nodes_df <- nodes_df %>%
+  select(contig_id, everything())
 
 
 # =========================================================================
@@ -33,7 +70,7 @@ cat("  - Nodes:", nrow(contig_df), "\n\n")
 # =========================================================================
 
 cat("=== PART 1: COMMUNITY STRUCTURE ANALYSIS ===\n")
-cat("Testing Louvain clustering with each edge type removed...\n\n")
+cat("Testing weighted Louvain clustering with each edge type removed...\n\n")
 
 res <- list()
 
@@ -41,17 +78,32 @@ for(t in c(unique(big_connection_df_filtered$type), "none")){
   cat("Processing:", t, "\n")
   
   if(t != "none"){
-    graph <- as_tbl_graph(big_connection_df_filtered %>% filter(type != t), directed = FALSE)
+    edges_to_use <- big_connection_df_filtered %>% filter(type != t)
   } else {
-    graph <- as_tbl_graph(big_connection_df_filtered, directed = FALSE)
+    edges_to_use <- big_connection_df_filtered
   }
   
-  graph <- graph %>%
-    mutate(louvain_group = group_louvain())
+  # Build graph from data frame (includes weights)
+  graph <- graph_from_data_frame(
+    d = edges_to_use, 
+    directed = FALSE, 
+    vertices = nodes_df
+  )
   
-  a <- as.data.table(table(V(graph)$louvain_group))
+  # Weighted Louvain clustering
+  communities <- cluster_louvain(graph, weights = E(graph)$weight, resolution = 5)
+  
+  # Extract membership
+  membership_df <- data.frame(
+    contig_id = V(graph)$name,
+    louvain_group = membership(communities),
+    stringsAsFactors = FALSE
+  )
+  
+  # Create summary table
+  a <- as.data.table(table(membership_df$louvain_group))
   setnames(a, c("V1", "N"), c("group", "count"))
-  a[, group := as.integer(group)]
+  a[, group := as.integer(as.character(group))]
   a[, removed_type := t]
   res[[t]] <- a
 }
@@ -61,11 +113,11 @@ dt <- rbindlist(res)
 cat("\n=== Community size summary ===\n")
 print(dt[, .(
   n_communities = .N,
-  min_size = min(count),
-  median_size = median(count),
-  max_size = max(count),
-  n_singletons = sum(count == 1),
-  n_10_to_500 = sum(count >= 10 & count <= 500)
+  min_size = as.numeric(min(count)),
+  median_size = as.numeric(median(count)),
+  max_size = as.numeric(max(count)),
+  n_singletons = as.numeric(sum(count == 1)),
+  n_10_to_500 = as.numeric(sum(count >= 10 & count <= 500))
 ), by = removed_type])
 
 
@@ -113,11 +165,15 @@ ggsave(plot = multi_plot, filename = "intermediate/network/network_analysis/louv
 # Test different Louvain resolutions --------------------------------------
 cat("\n=== Testing different Louvain resolutions ===\n")
 
-# Build full graph for resolution testing
-graph <- as_tbl_graph(big_connection_df_filtered, directed = FALSE)
+# Build full weighted graph for resolution testing
+graph <- graph_from_data_frame(
+  d = big_connection_df_filtered, 
+  directed = FALSE, 
+  vertices = nodes_df
+)
 
 for(res_val in c(0.5, 1.0, 1.5, 2.0, 3.0)) {
-  communities <- cluster_louvain(graph, resolution = res_val)
+  communities <- cluster_louvain(graph, weights = E(graph)$weight, resolution = res_val)
   sizes <- table(membership(communities))
   
   cat("\nResolution:", res_val, "\n")
@@ -126,6 +182,7 @@ for(res_val in c(0.5, 1.0, 1.5, 2.0, 3.0)) {
   cat("  Communities 10-500 nodes:", sum(sizes >= 10 & sizes <= 500), "\n")
   cat("  Singletons:", sum(sizes == 1), "\n")
 }
+
 
 
 # =========================================================================
@@ -137,7 +194,7 @@ cat("Building graph and calculating degree distribution...\n")
 
 g <- graph_from_data_frame(d = big_connection_df_filtered, 
                            directed = FALSE, 
-                           vertices = contig_df)
+                           vertices = nodes_df)
 
 d <- degree(g)
 

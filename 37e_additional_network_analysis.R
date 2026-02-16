@@ -17,7 +17,7 @@ library(patchwork)
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Create output directory
-dir.create("testing/additional_analyses", recursive = TRUE, showWarnings = FALSE)
+dir.create("intermediate/network/network_analysis/additional_analyses", recursive = TRUE, showWarnings = FALSE)
 
 
 # Load prepared data ------------------------------------------------------
@@ -58,9 +58,9 @@ edge_type_plot <- ggplot(edge_type_summary, aes(x = reorder(type, -n_edges), y =
     axis.text.x = element_text(angle = 45, hjust = 1)
   )
 
-ggsave(edge_type_plot, filename = "testing/additional_analyses/edge_type_distribution.png", 
+ggsave(edge_type_plot, filename = "intermediate/network/network_analysis/additional_analyses/edge_type_distribution.png", 
        width = 8, height = 5)
-ggsave(edge_type_plot, filename = "testing/additional_analyses/edge_type_distribution.pdf", 
+ggsave(edge_type_plot, filename = "intermediate/network/network_analysis/additional_analyses/edge_type_distribution.pdf", 
        width = 8, height = 5)
 
 
@@ -114,9 +114,9 @@ interaction_plot <- ggplot(interaction_totals, aes(x = reorder(interaction, -tot
   theme_cowplot() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggsave(interaction_plot, filename = "testing/additional_analyses/interaction_patterns.png", 
+ggsave(interaction_plot, filename = "intermediate/network/network_analysis/additional_analyses/interaction_patterns.png", 
        width = 10, height = 5)
-ggsave(interaction_plot, filename = "testing/additional_analyses/interaction_patterns.pdf", 
+ggsave(interaction_plot, filename = "intermediate/network/network_analysis/additional_analyses/interaction_patterns.pdf", 
        width = 10, height = 5)
 
 
@@ -157,9 +157,9 @@ component_plot <- ggplot(component_df, aes(x = 1:nrow(component_df), y = size)) 
   ) +
   theme_cowplot()
 
-ggsave(component_plot, filename = "testing/additional_analyses/component_sizes.png", 
+ggsave(component_plot, filename = "intermediate/network/network_analysis/additional_analyses/component_sizes.png", 
        width = 8, height = 5)
-ggsave(component_plot, filename = "testing/additional_analyses/component_sizes.pdf", 
+ggsave(component_plot, filename = "intermediate/network/network_analysis/additional_analyses/component_sizes.pdf", 
        width = 8, height = 5)
 
 
@@ -209,9 +209,9 @@ deg_violin <- ggplot(deg_df %>% filter(degree > 0),
   theme_cowplot() +
   theme(legend.position = "none")
 
-ggsave(deg_violin, filename = "testing/additional_analyses/degree_violin_by_type.png", 
+ggsave(deg_violin, filename = "intermediate/network/network_analysis/additional_analyses/degree_violin_by_type.png", 
        width = 7, height = 5)
-ggsave(deg_violin, filename = "testing/additional_analyses/degree_violin_by_type.pdf", 
+ggsave(deg_violin, filename = "intermediate/network/network_analysis/additional_analyses/degree_violin_by_type.pdf", 
        width = 7, height = 5)
 
 
@@ -235,8 +235,8 @@ cat("\nTop 20 hub nodes:\n")
 print(head(hubs, 20))
 
 # Save hub nodes to file
-fwrite(hubs, "testing/additional_analyses/hub_nodes.csv")
-cat("\nHub nodes saved to: testing/additional_analyses/hub_nodes.csv\n")
+fwrite(hubs, "intermediate/network/network_analysis/additional_analyses/hub_nodes.csv")
+cat("\nHub nodes saved to: intermediate/network/network_analysis/additional_analyses/hub_nodes.csv\n")
 
 
 # 6. Assortativity analysis -----------------------------------------------
@@ -294,7 +294,7 @@ print(density_by_type)
 
 # Summary report ----------------------------------------------------------
 cat("\n=== Additional analyses complete ===\n")
-cat("Results saved to: testing/additional_analyses/\n\n")
+cat("Results saved to: intermediate/network/network_analysis/additional_analyses/\n\n")
 
 cat("KEY FINDINGS:\n")
 cat("-------------\n")

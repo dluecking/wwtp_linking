@@ -102,10 +102,16 @@ edgelist_crispr <- fread("intermediate/network/crispr.csv")
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
-edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_3.csv") 
-edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_3.csv")
+edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_strat.csv") 
+edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_strat.csv")
 edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
+
+# load membership list ----------------------------------------------------
+
+cat("\n=== Loading LC cluster mapping ===\n")
+# membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership.csv")
+membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership_005.csv")
 
 # Process occurrence edges (Illumina and ONT) ------------------------------
 # Add edge IDs and clean Illumina df
@@ -143,7 +149,7 @@ occurance_edges <- edgelist_occurance_ill %>%
          spearman_ont, correlation_ont, 
          agree)
 
-# Remove disagreements (3 edges out of 1.5 million)
+# Remove disagreements
 occurance_edges <- occurance_edges %>% filter(agree == "TRUE")
 
 # Create value string
@@ -154,48 +160,156 @@ names(occurance_edges) <- c("edge_id", "from", "to", "spearman_ill", "correlatio
 
 
 # Create combined edge dataframe ------------------------------------------
+
+cat("\n=== Creating combined edge dataframe with weights ===\n")
+
+# Define weight constants (adjust these to tune clustering behavior)
+WEIGHT_CRISPR <- 1000
+WEIGHT_GENE_SHARING <- 3
+WEIGHT_INTEGRATION_BOUNDARY <- 1000
+WEIGHT_INTEGRATION_MIDDLE <- 750
+WEIGHT_NON_CRISPR <- 1000
+
+# Co-occurrence weights by correlation strength
+WEIGHT_COOCCUR_VERY_STRONG_POS <- 3   # Spearman >= 0.80, positive
+WEIGHT_COOCCUR_STRONG_POS <- 2        # Spearman >= 0.70, positive
+WEIGHT_COOCCUR_MODERATE_POS <- 1      # Spearman >= 0.60, positive
+
+WEIGHT_COOCCUR_VERY_STRONG_NEG <- 3   # Spearman >= 0.80, negative
+WEIGHT_COOCCUR_STRONG_NEG <- 2        # Spearman >= 0.70, negative
+WEIGHT_COOCCUR_MODERATE_NEG <- 1      # Spearman >= 0.60, negative
+
+# Spearman thresholds for co-occurrence weight tiers
+SPEARMAN_VERY_STRONG <- 0.80
+SPEARMAN_STRONG <- 0.70
+
+# Calculate average Spearman for co-occurrence edges
+occurance_edges <- occurance_edges %>%
+  mutate(
+    spearman_avg = (abs(spearman_ill) + abs(spearman_ont)) / 2
+  )
+
 big_connection_df <- rbind(
-  edgelist_crispr %>% select(from, to, value = "crispr") %>% 
-    mutate(type = "crispr"),
+  # High-confidence mechanistic evidence
+  edgelist_crispr %>% 
+    select(from, to, value = "crispr") %>% 
+    mutate(type = "crispr", weight = WEIGHT_CRISPR),
+  
   edgelist_gene_sharing %>% 
     select(from, to, value = "gene_sharing") %>% 
-    mutate(type = "gene_sharing"),
-  edgelist_integration_b %>% select(from, to, value = "integration_b") %>% 
-    mutate(type = "integration_boundary"),
-  edgelist_integration_m %>% select(from, to, value = "integration_m") %>% 
-    mutate(type = "integration_middle"),
-  edgelist_non_crispr %>% select(from, to, value = "non_CRISPR") %>% 
-    mutate(type = "non_crispr"),
+    mutate(type = "gene_sharing", weight = WEIGHT_GENE_SHARING),
+  
+  edgelist_integration_b %>% 
+    select(from, to, value = "integration_b") %>% 
+    mutate(type = "integration_boundary", weight = WEIGHT_INTEGRATION_BOUNDARY),
+  
+  edgelist_integration_m %>% 
+    select(from, to, value = "integration_m") %>% 
+    mutate(type = "integration_middle", weight = WEIGHT_INTEGRATION_MIDDLE),
+  
+  # Medium-confidence evidence
+  edgelist_non_crispr %>% 
+    select(from, to, value = "non_CRISPR") %>% 
+    mutate(type = "non_crispr", weight = WEIGHT_NON_CRISPR),
+  
+  # Positive co-occurrence (weighted by correlation strength)
   occurance_edges %>%
     filter(correlation_ont == "positive") %>% 
-    select(from, to, value = value) %>% 
-    mutate(type = "occurance_positive"),
+    mutate(
+      type = "occurance_positive",
+      weight = case_when(
+        spearman_avg >= SPEARMAN_VERY_STRONG ~ WEIGHT_COOCCUR_VERY_STRONG_POS,
+        spearman_avg >= SPEARMAN_STRONG ~ WEIGHT_COOCCUR_STRONG_POS,
+        TRUE ~ WEIGHT_COOCCUR_MODERATE_POS
+      )
+    ) %>%
+    select(from, to, value, type, weight),
+  
+  # Negative co-occurrence (lower weights)
   occurance_edges %>%
     filter(correlation_ont == "negative") %>% 
-    select(from, to, value = value) %>% 
-    mutate(type = "occurance_negative")
+    mutate(
+      type = "occurance_negative",
+      weight = case_when(
+        spearman_avg >= SPEARMAN_VERY_STRONG ~ WEIGHT_COOCCUR_VERY_STRONG_NEG,
+        spearman_avg >= SPEARMAN_STRONG ~ WEIGHT_COOCCUR_STRONG_NEG,
+        TRUE ~ WEIGHT_COOCCUR_MODERATE_NEG
+      )
+    ) %>%
+    select(from, to, value, type, weight)
 )
+
+cat("Edge weights configured:\n")
+cat("  Mechanistic evidence (CRISPR/integration/genes):", WEIGHT_CRISPR, "\n")
+cat("  Non-CRISPR evidence:", WEIGHT_NON_CRISPR, "\n")
+cat("  Co-occurrence (very strong ≥", SPEARMAN_VERY_STRONG, "):", 
+    WEIGHT_COOCCUR_VERY_STRONG_POS, "(pos),", WEIGHT_COOCCUR_VERY_STRONG_NEG, "(neg)\n")
+cat("  Co-occurrence (strong ≥", SPEARMAN_STRONG, "):", 
+    WEIGHT_COOCCUR_STRONG_POS, "(pos),", WEIGHT_COOCCUR_STRONG_NEG, "(neg)\n")
+cat("  Co-occurrence (moderate):", 
+    WEIGHT_COOCCUR_MODERATE_POS, "(pos),", WEIGHT_COOCCUR_MODERATE_NEG, "(neg)\n\n")
+
+
+# add membership information ----------------------------------------------
+# remove polypolish from GV name
+membership_df$contig_id <- str_remove(membership_df$contig_id, "\\spolypolish")
+membership_df$cluster_id <- str_remove(membership_df$cluster_id, "\\spolypolish")
+
+# replace from to with the cluster name (which is the same for GVs, PLVs, VPHs, but different for LCs)
+big_connection_df$from <- membership_df$cluster_id[match(big_connection_df$from, membership_df$contig_id)]
+big_connection_df$to <- membership_df$cluster_id[match(big_connection_df$to, membership_df$contig_id)]
 
 
 # Create unique edge IDs and filter duplicates ----------------------------
 big_connection_df_filtered <- big_connection_df %>%
-  mutate(edge_id = paste0(pmin(from, to), "--", pmax(from, to)))
+  mutate(
+    # For undirected edges, create sorted edge_id
+    edge_id_undirected = paste0(pmin(from, to), "--", pmax(from, to)),
+    # For directed edges (CRISPR, non_crispr), keep original order
+    edge_id = if_else(
+      type %in% c("crispr", "non_crispr"),
+      paste0(from, "--", to),  # Keep direction
+      edge_id_undirected       # Sort alphabetically
+    ),
+    # Mark which edges are directed
+    is_directed = type %in% c("crispr", "non_crispr")
+  ) %>%
+  select(-edge_id_undirected)
 
-# Keep only one row per edge_id + type (removes duplicate connections)
+# Keep only one row per edge_id + type
 big_connection_df_filtered <- big_connection_df_filtered %>% 
   dplyr::distinct(edge_id, type, .keep_all = TRUE)
+
+# remove "self connections" due to clustering:
+big_connection_df_filtered <- big_connection_df_filtered %>% filter(from != to)
+
+# quick testing
+# for(cluster in a %>% arrange(desc(N)) %>% top_n(10) %>% pull(V1)){
+#   cat(cluster, "\n")
+#   cat("occurs this many times UNFILTERED and uncollapsed:\n")
+#   s <- big_connection_df %>% 
+#     filter(if_any(everything(), ~ grepl(cluster, .))) %>% 
+#     nrow()
+#   print(s)
+#   cat("occurs this many times FILTERED and collapsed:\n")
+#   s <- big_connection_df_filtered %>% 
+#     filter(if_any(everything(), ~ grepl(cluster, .))) %>% 
+#     nrow()
+#   print(s)
+# }
+
 
 
 # Add node type information to edges --------------------------------------
 big_connection_df_filtered <- big_connection_df_filtered %>% 
   mutate(from_type = case_when(
-    str_ends(from, "lc")  ~ "lc",
+    str_starts(from, "LC_CLUSTER")  ~ "lc",
     str_ends(from, "vph") ~ "vph",
     str_ends(from, "plv") ~ "plv",
     TRUE ~ "gv"
   )) %>% 
   mutate(to_type = case_when(
-    str_ends(to, "lc")  ~ "lc",
+    str_starts(to, "LC_CLUSTER")  ~ "lc",
     str_ends(to, "vph") ~ "vph",
     str_ends(to, "plv") ~ "plv",
     TRUE ~ "gv"
@@ -219,6 +333,21 @@ cat("  - GV_info.csv\n")
 cat("  - vph_plv_combined_info.csv\n")
 cat("  - crispr_df.csv\n")
 cat("  - lc_tax_info_short.csv\n\n")
+
+# Weight summary ----------------------------------------------------------
+cat("\n=== Edge weight summary ===\n")
+weight_summary <- big_connection_df_filtered %>%
+  group_by(type) %>%
+  summarize(
+    n_edges = n(),
+    mean_weight = round(mean(weight), 2),
+    median_weight = median(weight),
+    min_weight = min(weight),
+    max_weight = max(weight)
+  ) %>%
+  arrange(desc(mean_weight))
+
+print(weight_summary)
 
 # Summary statistics
 cat("=== Network Summary ===\n")

@@ -15,6 +15,7 @@ library(ggsignif)
 library(tibble)
 library(doParallel)
 library(foreach)
+library(patchwork)
 
 # Setup -------------------------------------------------------------------
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
@@ -31,6 +32,42 @@ dir.create("final/centrality_plots", recursive = TRUE, showWarnings = FALSE)
 # Load prepared data ------------------------------------------------------
 big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv")
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
+membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership_005.csv")
+# Remove polypolish suffix from membership
+membership_df$contig_id <- str_remove(membership_df$contig_id, "\\spolypolish")
+membership_df$cluster_id <- str_remove(membership_df$cluster_id, "\\spolypolish")
+
+# Create nodes_df for graph construction
+nodes_df <- contig_df %>%
+  left_join(membership_df %>% select(contig_id, cluster_id, cluster_size), 
+            by = "contig_id") %>%
+  # Use cluster_id where available, otherwise keep original
+  mutate(
+    node_id = ifelse(!is.na(cluster_id), cluster_id, contig_id),
+    original_contig_id = contig_id  # Keep original
+  ) %>%
+  # CRITICAL: Keep only ONE row per node_id (first occurrence)
+  distinct(node_id, .keep_all = TRUE) %>%
+  # Rename for igraph compatibility
+  select(-contig_id) %>%
+  rename(contig_id = node_id)
+
+# Update type for LC clusters
+nodes_df <- nodes_df %>%
+  mutate(
+    type = case_when(
+      grepl("LC_CLUSTER", contig_id) ~ "lc",
+      str_ends(contig_id, "vph") ~ "vph",
+      str_ends(original_contig_id, "lc")  ~ "lc",
+      str_ends(contig_id, "plv") ~ "plv",
+      TRUE ~ "gv"
+    )
+  )
+
+# make sure contig_id is early:
+nodes_df <- nodes_df %>%
+  select(contig_id, everything())
+
 
 cat("Loaded data:\n")
 cat("  - Edges:", nrow(big_connection_df_filtered), "\n")
@@ -43,8 +80,8 @@ cat("=== Identifying LC contigs connected to GVs ===\n")
 lc_gv_connected <- big_connection_df_filtered %>%
   filter(from_type == "gv" | to_type == "gv") %>%   # Only GV edges
   mutate(lc = case_when(
-    str_ends(from, "_lc") ~ from,
-    str_ends(to, "_lc")   ~ to,
+    str_starts(from, "LC_CLUSTER") ~ from,
+    str_starts(to, "LC_CLUSTER")   ~ to,
     TRUE ~ NA_character_
   )) %>%
   filter(!is.na(lc)) %>%
@@ -91,12 +128,12 @@ deg_df <- enframe(deg, name = "contig_id", value = "degree")
 btw_df <- enframe(btw, name = "contig_id", value = "betweeness")
 
 network_df <- left_join(deg_df, btw_df)
-network_df$contig_type <- contig_df$type[match(network_df$contig_id, contig_df$contig_id)]
+network_df$contig_type <- nodes_df$type[match(network_df$contig_id, nodes_df$contig_id)]  
 
 # Update contig_type to distinguish LC-GV-connected from other LCs
 network_df <- network_df %>%
   mutate(contig_type = case_when(
-    str_ends(contig_id, "_lc") & contig_id %in% lc_gv_connected ~ "lc_gv_connected",
+    contig_type == "lc" & contig_id %in% lc_gv_connected ~ "lc_gv_connected",  # ✅ Just check if it's an LC
     TRUE ~ contig_type
   ))
 
@@ -211,8 +248,7 @@ for(layer in unique(big_connection_df_filtered$type)){
   btw_df_layer <- enframe(btw_layer, name = "contig_id", value = "betweeness")
   
   network_df_layer <- left_join(deg_df_layer, btw_df_layer)
-  network_df_layer$contig_type <- contig_df$type[match(network_df_layer$contig_id, contig_df$contig_id)]
-  
+  network_df_layer$contig_type <- nodes_df$type[match(network_df_layer$contig_id, nodes_df$contig_id)]
   # Set factor order
   network_df_layer$contig_type <- factor(network_df_layer$contig_type,
                                          levels = c("lc", "gv", "plv", "vph"))
@@ -273,8 +309,6 @@ for(layer in unique(big_connection_df_filtered$type)){
          width = 7, height = 4)
 }
 
-# Stop parallel cluster
-stopCluster(cl)
 
 cat("\n=== Centrality analysis complete ===\n")
 cat("Plots saved to: final/centrality_plots/\n")
