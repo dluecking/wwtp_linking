@@ -166,8 +166,8 @@ cat("\n=== Creating combined edge dataframe with weights ===\n")
 # Define weight constants (adjust these to tune clustering behavior)
 WEIGHT_CRISPR <- 1000
 WEIGHT_GENE_SHARING <- 3
-WEIGHT_INTEGRATION_BOUNDARY <- 1000
-WEIGHT_INTEGRATION_MIDDLE <- 750
+WEIGHT_INTEGRATION_BOUNDARY <- 750
+WEIGHT_INTEGRATION_MIDDLE <- 1000
 WEIGHT_NON_CRISPR <- 1000
 
 # Co-occurrence weights by correlation strength
