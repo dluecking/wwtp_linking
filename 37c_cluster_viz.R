@@ -14,7 +14,7 @@ library(ggiraph)
 library(htmltools)
 
 # Setup -------------------------------------------------------------------
-setwd("/run/user/1000/gvfs/sftp:host=login01.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking/")
+setwd("/run/user/1000/gvfs/sftp:host=login02.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking/")
 
 # dir.create("final/plv_vph_subclusters", recursive = TRUE, showWarnings = FALSE)
 # dir.create("final/gv_subclusters", recursive = TRUE, showWarnings = FALSE)

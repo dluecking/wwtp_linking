@@ -24,3 +24,4 @@ minced -spacers -gffFull \
        "${INPUT_CONTIGS}" \
        "${OUTPUT_DIR}/${OUTPUT_BASE}.txt" \
        "${OUTPUT_DIR}/${OUTPUT_BASE}.gff"
+       

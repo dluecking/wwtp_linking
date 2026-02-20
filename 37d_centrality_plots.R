@@ -165,7 +165,7 @@ cat("Creating degree distribution plot...\n")
 deg_plot <- ggplot(network_df, aes(x = contig_type, y = degree, fill = contig_type)) +
   geom_boxplot() +
   geom_signif(
-    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "vph"), c("lc", "plv"), c("lc", "gv")),
+    comparisons = list(c("lc", "lc_gv_connected"), c("lc", "gv")),
     map_signif_level = TRUE, textsize = 3, step_increase = 0.1, margin_top = 0.15) +
   scale_y_log10() +
   labs(
