@@ -10,11 +10,11 @@ library(stringr)
 
 # set working directory
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
+# setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
 
 
 # what fraction of genes needs to be shared so I keep it?
-CUTOFF <- 0.01 # this is 5% right now
+CUTOFF <- 0.05 # this is 5% right now
 
 # load blastp output ------------------------------------------------------
 

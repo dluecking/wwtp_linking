@@ -14,7 +14,7 @@ library(ggiraph)
 library(htmltools)
 
 # Setup -------------------------------------------------------------------
-setwd("/run/user/1000/gvfs/sftp:host=login02.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking/")
+setwd("/run/user/1000/gvfs/sftp:host=login01.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking/")
 
 # dir.create("final/plv_vph_subclusters", recursive = TRUE, showWarnings = FALSE)
 # dir.create("final/gv_subclusters", recursive = TRUE, showWarnings = FALSE)
@@ -79,12 +79,10 @@ nodes_df <- contig_df %>%
     node_id = ifelse(!is.na(cluster_id), cluster_id, contig_id),
     original_contig_id = contig_id
   ) %>%
+  as_tibble() %>%
   distinct(node_id, .keep_all = TRUE) %>%
   select(-contig_id) %>%
-  rename(contig_id = node_id) %>%
-  select(contig_id, everything())
-
-nodes_df <- nodes_df %>%
+  select(contig_id = node_id, everything()) %>%  # Combined rename + select
   mutate(
     type = case_when(
       grepl("LC_CLUSTER", contig_id) ~ "lc",
@@ -121,8 +119,8 @@ cat("Found", max(V(graph)$louvain_group), "Louvain communities\n\n")
 
 
 # User configuration ------------------------------------------------------
-SINGLE_MODE <- FALSE
-CONTIG_OF_INTEREST <- "Bjer_2_3"
+SINGLE_MODE <- TRUE
+CONTIG_OF_INTEREST <- "Aved_tig00303955-10-54120_vph"
 SAVE_PLOT <- TRUE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
@@ -238,9 +236,7 @@ for(contig in list_of_sequences_to_print){
     activate(edges) %>%  # Switch to edges!
     mutate(arrow_size = if_else(type %in% directed_types, 2, 0))
   
-  layout <- create_layout(g, layout = "graphopt")
-  
-  
+  layout <- create_layout(g, layout = "gem")
   
   graph_plot <- ggraph(layout) +
     # Layer 1: Undirected edges (no filter, no arrow)
@@ -299,7 +295,7 @@ for(contig in list_of_sequences_to_print){
         edge_type = c(
           "gene_sharing" = "Gene Sharing",
           "crispr" = "CRISPR",
-          "non_crispr" = "MIMIVIRE",
+          "non_crispr" = "Repeats",
           "integration_boundary" = "Integration (boundary)",
           "integration_middle" = "Integration (middle)",
           "occurance_positive" = "Co-occurrence (positive)", 
@@ -321,6 +317,7 @@ for(contig in list_of_sequences_to_print){
     )
   
   interactive_plot <- girafe(ggobj = graph_plot)
+  interactive_plot
   
   if(SAVE_PLOT){
     type_of_contig <- str_remove(contig, "^.*\\_")
@@ -338,13 +335,13 @@ for(contig in list_of_sequences_to_print){
     
     ggsave(graph_plot + theme(legend.position = "none"), 
            file = paste0(FILE_BASE, ".svg"), 
-           width = 4.5, height = 1.8 * HEIGHT_FACTOR)
+           width = 6, height = 2 * HEIGHT_FACTOR)
     ggsave(graph_plot + theme(legend.position = "none"), 
            file = paste0(FILE_BASE, ".pdf"), 
-           width = 4.5, height = 1.8 * HEIGHT_FACTOR)
+           width = 6, height = 2 * HEIGHT_FACTOR)
     ggsave(graph_plot + theme(legend.position = "none"), 
            file = paste0(FILE_BASE, ".png"), 
-           width = 4.5, height = 1.8 * HEIGHT_FACTOR)
+           width = 6, height = 2 * HEIGHT_FACTOR)
     htmltools::save_html(interactive_plot, file = paste0(FILE_BASE, "_interactive.html"))
     
     cat("  PROCESSED:", contig, "(", nrow(small_node_df), "nodes,", 

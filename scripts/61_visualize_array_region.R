@@ -1,5 +1,7 @@
-#!/usr/bin/env Rscript
+# Author: dlu @ veelab
+# Version: 2026-02-26
 
+# functions ---------------------------------------------------------------
 # CRISPR/Spacer Validation via Coverage & GC Content
 # Purpose: Verify CRISPR arrays/spacers in NCVs by examining read support and GC patterns
 
@@ -13,6 +15,18 @@ suppressPackageStartupMessages({
   library(patchwork)
   library(zoo)  # for rollmean
 })
+
+#' Smooth coverage with rolling window
+#'
+#' @param coverage_dt data.table with position and coverage
+#' @param window_size Window size for rolling mean
+#' @return data.table with smoothed coverage
+smooth_coverage <- function(coverage_dt, window_size = 50) {
+  coverage_dt[, coverage_smooth := zoo::rollmean(coverage, k = window_size, 
+                                                 fill = NA, align = "center")]
+  coverage_dt
+}
+
 
 #' Calculate GC content in sliding window
 #'
@@ -45,14 +59,13 @@ calculate_gc_content <- function(sequence, window_size = 50) {
 #' @param start Start position
 #' @param end End position
 #' @return data.table with position and coverage
+
 extract_coverage <- function(bam_file, contig, start, end) {
   # Create GRanges object for region
   region <- GRanges(seqnames = contig, ranges = IRanges(start = start, end = end))
   
-  # Set up BAM parameters
+  # Read BAM to get read alignments
   param <- ScanBamParam(which = region, what = c("pos", "qwidth"))
-  
-  # Read BAM
   bam_data <- scanBam(bam_file, param = param)[[1]]
   
   if (length(bam_data$pos) == 0) {
@@ -60,29 +73,29 @@ extract_coverage <- function(bam_file, contig, start, end) {
     return(data.table(position = start:end, coverage = 0))
   }
   
-  # Calculate coverage using pileup
-  pileup_param <- PileupParam(max_depth = 100000, min_base_quality = 0, 
-                              min_mapq = 0, distinguish_strands = FALSE)
+  # Convert reads to GRanges
+  reads_gr <- GRanges(
+    seqnames = contig,
+    ranges = IRanges(start = bam_data$pos, width = bam_data$qwidth)
+  )
   
-  coverage_data <- pileup(bam_file, scanBamParam = param, pileupParam = pileup_param)
+  # Calculate coverage using GenomicRanges (fast, vectorized)
+  cov <- coverage(reads_gr)[[contig]]
   
-  # Convert to data.table with full range
-  if (nrow(coverage_data) == 0) {
+  # Extract coverage for our region
+  if (is.null(cov) || length(cov) < end) {
+    warning(paste("Coverage calculation failed for", contig))
     return(data.table(position = start:end, coverage = 0))
   }
   
-  coverage_dt <- data.table(
-    position = coverage_data$pos,
-    coverage = coverage_data$count
+  coverage_vector <- as.integer(cov[start:end])
+  
+  data.table(
+    position = start:end,
+    coverage = coverage_vector
   )
-  
-  # Fill in missing positions with 0 coverage
-  full_range <- data.table(position = start:end)
-  coverage_dt <- merge(full_range, coverage_dt, by = "position", all.x = TRUE)
-  coverage_dt[is.na(coverage), coverage := 0]
-  
-  coverage_dt
 }
+
 
 #' Main validation function
 #'
@@ -104,7 +117,7 @@ validate_crispr_region <- function(fasta_file, ont_bam, ill_bam, contig,
   # Expand region to include flanks
   region_start <- max(1, start - flank_bp)
   region_end <- end + flank_bp
-  
+
   # Read FASTA sequence
   cat("Reading FASTA...\n")
   fasta <- readDNAStringSet(fasta_file)
@@ -135,13 +148,16 @@ validate_crispr_region <- function(fasta_file, ont_bam, ill_bam, contig,
   gc_data <- calculate_gc_content(region_seq, window_size = gc_window)
   gc_data[, position := position + region_start - 1]  # Adjust to genome coordinates
   
-  # Extract coverage from both BAM files (now including flanks)
+  
+  # Extract coverage from both BAM files
   cat("Extracting ONT coverage...\n")
   ont_cov <- extract_coverage(ont_bam, contig, region_start, region_end)
+  ont_cov <- smooth_coverage(ont_cov, window_size = 50)  # <-- ADD THIS
   ont_cov[, read_type := "ONT"]
   
   cat("Extracting Illumina coverage...\n")
   ill_cov <- extract_coverage(ill_bam, contig, region_start, region_end)
+  ill_cov <- smooth_coverage(ill_cov, window_size = 50)  # <-- ADD THIS
   ill_cov[, read_type := "Illumina"]
   
   # Combine coverage data
@@ -153,16 +169,16 @@ validate_crispr_region <- function(fasta_file, ont_bam, ill_bam, contig,
     label = c("ROI Start", "ROI End")
   )
   
-  # Highlight region of interest (without flanks) - lighter background
+  # Highlight region of interest (without flanks) - light grey background
   roi_rect <- data.frame(xmin = start, xmax = end, ymin = -Inf, ymax = Inf)
   
   # Plot 1: GC content
   p1 <- ggplot(gc_data, aes(x = position, y = gc_content)) +
     geom_rect(data = roi_rect, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-              fill = "yellow", alpha = 0.15, inherit.aes = FALSE) +
+              fill = "grey90", alpha = 0.8, inherit.aes = FALSE) +
     geom_vline(data = roi_boundaries, aes(xintercept = x), 
                linetype = "dashed", color = "red", linewidth = 0.8) +
-    geom_line(color = "darkblue", linewidth = 0.8) +
+    geom_line(color = "black", linewidth = 0.8) +
     geom_hline(yintercept = 50, linetype = "dotted", color = "gray50", alpha = 0.5) +
     annotate("text", x = start, y = max(gc_data$gc_content, na.rm = TRUE) * 0.95, 
              label = "Start", hjust = -0.1, vjust = 1, size = 3, color = "red") +
@@ -173,27 +189,29 @@ validate_crispr_region <- function(fasta_file, ont_bam, ill_bam, contig,
          x = NULL,
          y = "GC Content (%)") +
     scale_x_continuous(limits = c(region_start, region_end)) +
+    scale_y_continuous(limits = c(0, NA)) +
     theme_minimal() +
     theme(axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           panel.grid.minor = element_blank(),
           plot.title = element_text(face = "bold"))
   
-  # Plot 2: Coverage
-  p2 <- ggplot(cov_combined, aes(x = position, y = coverage, color = read_type)) +
+  # Plot 2: Coverage (now with lines instead of filled area)
+  # Plot 2: Coverage with smoothed lines
+  p2 <- ggplot(cov_combined, aes(x = position, y = coverage_smooth, linetype = read_type)) +
     geom_rect(data = roi_rect, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-              fill = "yellow", alpha = 0.15, inherit.aes = FALSE) +
+              fill = "grey90", alpha = 0.8, inherit.aes = FALSE) +
     geom_vline(data = roi_boundaries, aes(xintercept = x), 
-               linetype = "dashed", color = "red", linewidth = 0.8) +
-    geom_line(linewidth = 0.7, alpha = 0.8) +
-    scale_color_manual(values = c("ONT" = "#E64B35", "Illumina" = "#4DBBD5"),
-                       name = "Read Type") +
-    labs(subtitle = sprintf("Read Coverage (flanks: %d-%d | ROI: %d-%d | flanks: %d-%d)", 
-                            region_start, start - 1, start, end, end + 1, region_end),
+               linetype = "solid", color = "red", linewidth = 0.8) +
+    geom_line(color = "black", linewidth = 0.8) +
+    scale_linetype_manual(values = c("ONT" = "dashed", "Illumina" = "dotted"),
+                          name = "Read Type") +
+    labs(subtitle = sprintf("Read Coverage - Rolling Mean (window = 50 bp)"),
          x = "Genomic Position (bp)",
          y = "Coverage (reads)") +
     scale_x_continuous(limits = c(region_start, region_end),
-                       labels = scales::comma) +
+                       labels = function(x) format(x, big.mark = ",", scientific = FALSE)) +
+    scale_y_continuous(limits = c(0, NA)) +
     theme_minimal() +
     theme(panel.grid.minor = element_blank(),
           legend.position = "bottom",
@@ -259,7 +277,7 @@ Example:
 
 Note: 
   - Red dashed vertical lines mark the ROI boundaries (start and end)
-  - Yellow shaded area highlights the region of interest
+  - Light grey shaded area highlights the region of interest
   - Coverage and GC plots show ±500 bp flanking regions
 
 ", file = stderr())
@@ -302,42 +320,3 @@ cat(sprintf("ONT - Mean: %.1f\n", stats$ont_flank_mean))
 cat(sprintf("Illumina - Mean: %.1f\n", stats$ill_flank_mean))
 cat("\n--- Sequence Composition ---\n")
 cat(sprintf("Mean GC Content: %.1f%%\n", stats$mean_gc))
-```
-
----
-  
-  ## **Key Changes:**
-  
-  1. **Vertical red dashed lines** at `start` and `end` positions to clearly mark ROI boundaries
-2. **Coverage plots now include ±500 bp flanks** (was already showing them, but now explicitly noted in subtitle)
-3. **Text annotations** "Start" and "End" at the top of the GC plot
-4. **Enhanced subtitle** on coverage plot showing exact coordinates of flanks and ROI
-5. **Split statistics** - now reports coverage separately for ROI vs flanking regions
-
----
-  
-  ## **What the Output Shows:**
-  
-  **Visual elements:**
-  - **Yellow shaded area**: Your region of interest (the CRISPR array/spacer)
-- **Red dashed vertical lines**: Exact boundaries you specified
-- **Flanking regions**: 500 bp on each side to detect assembly artifacts or coverage drops
-- **Dotted gray line** at 50% GC for reference
-
-**Statistics printed:**
-  ```
-=== Summary Statistics ===
-  Region of Interest: Lyne_1:263777-265136
-Full Region (with flanks): Lyne_1:263277-265636
-ROI Length: 1360 bp
-
---- Coverage in ROI ---
-  ONT - Mean: 45.2, Median: 47.0
-Illumina - Mean: 123.5, Median: 125.0
-
---- Coverage in Flanks ---
-  ONT - Mean: 52.1
-Illumina - Mean: 118.3
-
---- Sequence Composition ---
-  Mean GC Content: 38.2%

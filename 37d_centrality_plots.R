@@ -133,7 +133,7 @@ network_df$contig_type <- nodes_df$type[match(network_df$contig_id, nodes_df$con
 # Update contig_type to distinguish LC-GV-connected from other LCs
 network_df <- network_df %>%
   mutate(contig_type = case_when(
-    contig_type == "lc" & contig_id %in% lc_gv_connected ~ "lc_gv_connected",  # ✅ Just check if it's an LC
+    contig_type == "lc" & contig_id %in% lc_gv_connected ~ "lc_gv_connected",  
     TRUE ~ contig_type
   ))
 
