@@ -131,7 +131,8 @@ aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_viru
 midpoint_tree <- phangorn::midpoint(aster_tree)
 
 tree <- ggtree(aster_tree, layout = "fan", open.angle = 180)
-#  flip(41, 186) # this was supposed to flip the one clade where the flipping would help, but it fucks up the tree...
+# %>%
+#   rotate(41, 186) # this was supposed to flip the one clade where the flipping would help, but it fucks up the tree...
 
 # colors
 paletteer_d("dichromat::BluetoOrangeRed_14")

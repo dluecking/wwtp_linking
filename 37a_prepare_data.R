@@ -98,7 +98,8 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
 # Load edge lists ---------------------------------------------------------
-edgelist_crispr <- fread("intermediate/network/crispr.csv")
+edgelist_crispr <- fread("intermediate/network/crispr.csv") %>%
+  filter(str_ends(from, "_lc")) # removal of non-MC edges
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
@@ -164,11 +165,11 @@ names(occurance_edges) <- c("edge_id", "from", "to", "spearman_ill", "correlatio
 cat("\n=== Creating combined edge dataframe with weights ===\n")
 
 # Define weight constants (adjust these to tune clustering behavior)
-WEIGHT_CRISPR <- 1000
+WEIGHT_CRISPR <- 100
 WEIGHT_GENE_SHARING <- 3
-WEIGHT_INTEGRATION_BOUNDARY <- 750
-WEIGHT_INTEGRATION_MIDDLE <- 1000
-WEIGHT_NON_CRISPR <- 1000
+WEIGHT_INTEGRATION_BOUNDARY <- 50
+WEIGHT_INTEGRATION_MIDDLE <- 100
+WEIGHT_NON_CRISPR <- 100
 
 # Co-occurrence weights by correlation strength
 WEIGHT_COOCCUR_VERY_STRONG_POS <- 3   # Spearman >= 0.80, positive
@@ -282,22 +283,6 @@ big_connection_df_filtered <- big_connection_df_filtered %>%
 
 # remove "self connections" due to clustering:
 big_connection_df_filtered <- big_connection_df_filtered %>% filter(from != to)
-
-# quick testing
-# for(cluster in a %>% arrange(desc(N)) %>% top_n(10) %>% pull(V1)){
-#   cat(cluster, "\n")
-#   cat("occurs this many times UNFILTERED and uncollapsed:\n")
-#   s <- big_connection_df %>% 
-#     filter(if_any(everything(), ~ grepl(cluster, .))) %>% 
-#     nrow()
-#   print(s)
-#   cat("occurs this many times FILTERED and collapsed:\n")
-#   s <- big_connection_df_filtered %>% 
-#     filter(if_any(everything(), ~ grepl(cluster, .))) %>% 
-#     nrow()
-#   print(s)
-# }
-
 
 
 # Add node type information to edges --------------------------------------
