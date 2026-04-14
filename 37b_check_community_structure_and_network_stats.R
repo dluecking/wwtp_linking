@@ -14,7 +14,7 @@ library(poweRlaw)
 # Setup -------------------------------------------------------------------
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # setwd("/lisc/data/scratch/dome/willemsen/luecking/projects/wwtp_linking")
-
+rm(list = ls())
 # Create output directories
 dir.create("intermediate/network/network_analysis/louvain_plots", recursive = TRUE, showWarnings = FALSE)
 dir.create("intermediate/network/network_analysis/scale_free_analysis", recursive = TRUE, showWarnings = FALSE)
@@ -172,7 +172,7 @@ graph <- graph_from_data_frame(
   vertices = nodes_df
 )
 
-for(res_val in c(0.5, 1.0, 1.5, 2.0, 3.0)) {
+for(res_val in seq(0.5, 15, by = 1)) {
   communities <- cluster_louvain(graph, weights = E(graph)$weight, resolution = res_val)
   sizes <- table(membership(communities))
   

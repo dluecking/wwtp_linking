@@ -15,14 +15,13 @@ library(htmltools)
 
 # Setup -------------------------------------------------------------------
 setwd("/run/user/1000/gvfs/sftp:host=login01.lisc.univie.ac.at,user=luecking/lisc/home/user/luecking/luecking_scratch/projects/wwtp_linking/")
-
+rm(list = ls())
 # dir.create("final/plv_vph_subclusters", recursive = TRUE, showWarnings = FALSE)
 # dir.create("final/gv_subclusters", recursive = TRUE, showWarnings = FALSE)
 
 
 # Load prepared data ------------------------------------------------------
-big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv") %>% 
-  filter(type != "non_crispr") # we remove mimivire 1 edge
+big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv")
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
 GV_info <- fread("intermediate/network/network_analysis/GV_info.csv")
 vph_plv_combined_info <- fread("intermediate/network/network_analysis/vph_plv_combined_info.csv")
@@ -114,7 +113,7 @@ graph <- graph_from_data_frame(
 graph <- as_tbl_graph(graph)
 set.seed(1312) # I need to set a seed, otherwise this is non-deterministic
 graph <- graph %>% 
-  mutate(louvain_group = group_louvain(weights = weight, resolution = 3))
+  mutate(louvain_group = group_louvain(weights = weight, resolution = 10))
 
 cat("Graph has", vcount(graph), "nodes and", ecount(graph), "edges\n")
 cat("Found", max(V(graph)$louvain_group), "Louvain communities\n\n")
@@ -122,7 +121,7 @@ cat("Found", max(V(graph)$louvain_group), "Louvain communities\n\n")
 
 # User configuration ------------------------------------------------------
 SINGLE_MODE <- FALSE
-CONTIG_OF_INTEREST <- "Hjor_2_3_4_6"
+CONTIG_OF_INTEREST <- "Bjer_2_3"
 SAVE_PLOT <- TRUE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
@@ -137,6 +136,7 @@ list_of_sequences_to_print <- gvs
 # Process sequences -------------------------------------------------------
 if(SINGLE_MODE){
   list_of_sequences_to_print <- CONTIG_OF_INTEREST
+  contig <- CONTIG_OF_INTEREST
   cat("=== SINGLE MODE: Processing", CONTIG_OF_INTEREST, "===\n\n")
 } else {
   cat("=== BATCH MODE: Processing", length(list_of_sequences_to_print), "sequences ===\n\n")
@@ -216,11 +216,8 @@ for(contig in list_of_sequences_to_print){
   }
   
   # Add is_directed flag to edges
-  directed_types <- c("crispr", "non_crispr", "integration_boundary", "integration_middle")
+  directed_types <- c("crispr", "integration_boundary", "integration_middle")
   small_edge_df$is_directed <- small_edge_df$type %in% directed_types
-  
-  # Define directed types
-  directed_types <- c("crispr", "non_crispr", "integration_boundary", "integration_middle")
   
   # Build subgraph (undirected)
   g <- graph_from_data_frame(small_edge_df, 
@@ -297,7 +294,7 @@ for(contig in list_of_sequences_to_print){
         edge_type = c(
           "gene_sharing" = "Gene Sharing",
           "crispr" = "CRISPR",
-          "non_crispr" = "Repeats",
+          # "non_crispr" = "Repeats", # removed!
           "integration_boundary" = "Integration (boundary)",
           "integration_middle" = "Integration (middle)",
           "occurance_positive" = "Co-occurrence (positive)", 

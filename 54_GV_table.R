@@ -112,7 +112,7 @@ gv_table <- gv_data %>%
   select(
     public_ID, personal_assessment_order, completeness,
     length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, 
-    crispr_array, # crispr_cas,
+    # crispr_array, crispr_cas,
     tRNA, tRNA_list
   ) %>%
   gt() %>%
@@ -169,8 +169,8 @@ gv_table <- gv_data %>%
     ncldv_hits = "Marker Genes",
     tRNA = "# tRNAs",
     tRNA_list = "tRNA sequences",
-    padloc = "Defensive System",
-    crispr_array = "# CRISPR Spacers"
+    padloc = "Defensive System"
+    # crispr_array = "# CRISPR Spacers"
     # crispr_cas = "CRISPR-Cas Genes"
   ) %>%
   
@@ -188,5 +188,18 @@ gv_table <- gv_data %>%
 
 gv_table
 
+library(webshot2)
+library(pagedown)
 
 gtsave(gv_table, filename = "final/ncv_table.html")
+pagedown::chrome_print(
+  "final/ncv_table.html", 
+  "final/ncv_table.pdf",
+  options = list(
+    paperWidth = 8.27,       # A4 width in inches
+    paperHeight = 11.69,     # A4 height in inches
+    printBackground = TRUE,
+    preferCSSPageSize = FALSE,
+    scale = 0.75              # Scale down to fit
+  )
+)

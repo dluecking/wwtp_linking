@@ -13,6 +13,7 @@ library(tidyr)
 # Setup -------------------------------------------------------------------
 # set working directory
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+rm(list = ls())
 
 # Create output directory if needed
 dir.create("intermediate/network/network_analysis", recursive = TRUE, showWarnings = FALSE)
@@ -53,9 +54,9 @@ GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>%
 
 # VPH and PLV info
 sheet_url <- "https://docs.google.com/spreadsheets/d/1CnqcfhOfS0rVBU6mvyCKrm50BmxJjVvif47f9vkQZgU/edit?gid=836958150#gid=836958150"
-vph_info <- read_sheet(sheet_url, sheet = "Table S3") %>% 
+vph_info <- read_sheet(sheet_url, sheet = "Table S4") %>% 
   select(contig_ID, public_ID)
-plv_info <- read_sheet(sheet_url, sheet = "Table S4") %>% 
+plv_info <- read_sheet(sheet_url, sheet = "Table S5") %>% 
   select(contig_ID, public_ID)
 vph_plv_combined_info <- rbind(vph_info, plv_info)
 
@@ -105,7 +106,6 @@ edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
 edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_strat.csv") 
 edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_strat.csv")
-edgelist_non_crispr <- fread("intermediate/network/non_CRISPR.csv")
 
 
 # load membership list ----------------------------------------------------
@@ -166,18 +166,17 @@ cat("\n=== Creating combined edge dataframe with weights ===\n")
 
 # Define weight constants (adjust these to tune clustering behavior)
 WEIGHT_CRISPR <- 100
-WEIGHT_GENE_SHARING <- 3
-WEIGHT_INTEGRATION_BOUNDARY <- 50
+WEIGHT_GENE_SHARING <- 1
+WEIGHT_INTEGRATION_BOUNDARY <- 100
 WEIGHT_INTEGRATION_MIDDLE <- 100
-WEIGHT_NON_CRISPR <- 100
 
 # Co-occurrence weights by correlation strength
-WEIGHT_COOCCUR_VERY_STRONG_POS <- 3   # Spearman >= 0.80, positive
-WEIGHT_COOCCUR_STRONG_POS <- 2        # Spearman >= 0.70, positive
+WEIGHT_COOCCUR_VERY_STRONG_POS <- 5   # Spearman >= 0.80, positive
+WEIGHT_COOCCUR_STRONG_POS <- 3        # Spearman >= 0.70, positive
 WEIGHT_COOCCUR_MODERATE_POS <- 1      # Spearman >= 0.60, positive
 
-WEIGHT_COOCCUR_VERY_STRONG_NEG <- 3   # Spearman >= 0.80, negative
-WEIGHT_COOCCUR_STRONG_NEG <- 2        # Spearman >= 0.70, negative
+WEIGHT_COOCCUR_VERY_STRONG_NEG <- 5   # Spearman >= 0.80, negative
+WEIGHT_COOCCUR_STRONG_NEG <- 3        # Spearman >= 0.70, negative
 WEIGHT_COOCCUR_MODERATE_NEG <- 1      # Spearman >= 0.60, negative
 
 # Spearman thresholds for co-occurrence weight tiers
@@ -208,11 +207,6 @@ big_connection_df <- rbind(
     select(from, to, value = "integration_m") %>% 
     mutate(type = "integration_middle", weight = WEIGHT_INTEGRATION_MIDDLE),
   
-  # Medium-confidence evidence
-  edgelist_non_crispr %>% 
-    select(from, to, value = "non_CRISPR") %>% 
-    mutate(type = "non_crispr", weight = WEIGHT_NON_CRISPR),
-  
   # Positive co-occurrence (weighted by correlation strength)
   occurance_edges %>%
     filter(correlation_ont == "positive") %>% 
@@ -242,7 +236,6 @@ big_connection_df <- rbind(
 
 cat("Edge weights configured:\n")
 cat("  Mechanistic evidence (CRISPR/integration/genes):", WEIGHT_CRISPR, "\n")
-cat("  Non-CRISPR evidence:", WEIGHT_NON_CRISPR, "\n")
 cat("  Co-occurrence (very strong ≥", SPEARMAN_VERY_STRONG, "):", 
     WEIGHT_COOCCUR_VERY_STRONG_POS, "(pos),", WEIGHT_COOCCUR_VERY_STRONG_NEG, "(neg)\n")
 cat("  Co-occurrence (strong ≥", SPEARMAN_STRONG, "):", 
@@ -268,12 +261,12 @@ big_connection_df_filtered <- big_connection_df %>%
     edge_id_undirected = paste0(pmin(from, to), "--", pmax(from, to)),
     # For directed edges (CRISPR, non_crispr), keep original order
     edge_id = if_else(
-      type %in% c("crispr", "non_crispr"),
+      type %in% c("crispr"),
       paste0(from, "--", to),  # Keep direction
       edge_id_undirected       # Sort alphabetically
     ),
     # Mark which edges are directed
-    is_directed = type %in% c("crispr", "non_crispr")
+    is_directed = type %in% c("crispr")
   ) %>%
   select(-edge_id_undirected)
 
