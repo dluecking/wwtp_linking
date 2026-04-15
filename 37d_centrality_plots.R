@@ -19,6 +19,7 @@ library(patchwork)
 
 # Setup -------------------------------------------------------------------
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+rm(list = ls())
 
 # Parallel setup
 cores_to_use <- 14

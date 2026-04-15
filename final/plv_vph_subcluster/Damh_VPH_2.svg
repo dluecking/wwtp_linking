@@ -35,10 +35,10 @@
 </defs>
 <g clip-path='url(#cpNS40OHwyMTMuMjZ8MjIuNDB8MTM4LjUy)'>
 <rect x='5.48' y='22.40' width='207.78' height='116.12' style='stroke-width: 1.07; stroke: none; fill: #FFFFFF;' />
-<line x1='61.20' y1='93.38' x2='14.92' y2='27.68' style='stroke-width: 1.07; stroke: #F8766D; stroke-opacity: 0.90; stroke-linecap: butt;' />
-<circle cx='203.82' cy='133.24' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #2E8B57; fill-opacity: 0.80;' />
-<circle cx='61.20' cy='93.38' r='4.98' style='stroke-width: 1.42; fill: #FFC125;' />
-<circle cx='14.92' cy='27.68' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #FFC125; fill-opacity: 0.80;' />
+<line x1='19.08' y1='133.24' x2='203.82' y2='115.33' style='stroke-width: 1.07; stroke: #F8766D; stroke-opacity: 0.90; stroke-linecap: butt;' />
+<circle cx='14.92' cy='27.68' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #2E8B57; fill-opacity: 0.80;' />
+<circle cx='19.08' cy='133.24' r='4.98' style='stroke-width: 1.42; fill: #FFC125;' />
+<circle cx='203.82' cy='115.33' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #FFC125; fill-opacity: 0.80;' />
 <rect x='5.48' y='22.40' width='207.78' height='116.12' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHwxNDQuMDA=)'>
@@ -50,11 +50,11 @@
 </defs>
 <g clip-path='url(#cpMjE4Ljc0fDQyNi41MnwyMi40MHwxMzguNTI=)'>
 <rect x='218.74' y='22.40' width='207.78' height='116.12' style='stroke-width: 1.07; stroke: none; fill: #FFFFFF;' />
-<line x1='274.46' y1='93.38' x2='417.08' y2='133.24' style='stroke-width: 1.07; stroke: #00BFC4; stroke-opacity: 0.90; stroke-linecap: butt;' />
-<polygon points='411.58,134.65 417.08,133.24 413.11,129.19 ' style='stroke-width: 1.07; stroke: #00BFC4; stroke-opacity: 0.90; stroke-linecap: butt; fill: #00BFC4; fill-opacity: 0.90;' />
-<circle cx='417.08' cy='133.24' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #2E8B57; fill-opacity: 0.80;' />
-<circle cx='274.46' cy='93.38' r='4.98' style='stroke-width: 1.42; fill: #FFC125;' />
-<circle cx='228.18' cy='27.68' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #FFC125; fill-opacity: 0.80;' />
+<line x1='232.34' y1='133.24' x2='228.18' y2='27.68' style='stroke-width: 1.07; stroke: #00BFC4; stroke-opacity: 0.90; stroke-linecap: butt;' />
+<polygon points='231.21,32.47 228.18,27.68 225.55,32.69 ' style='stroke-width: 1.07; stroke: #00BFC4; stroke-opacity: 0.90; stroke-linecap: butt; fill: #00BFC4; fill-opacity: 0.90;' />
+<circle cx='228.18' cy='27.68' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #2E8B57; fill-opacity: 0.80;' />
+<circle cx='232.34' cy='133.24' r='4.98' style='stroke-width: 1.42; fill: #FFC125;' />
+<circle cx='417.08' cy='115.33' r='3.41' style='stroke-width: 0.43; stroke: #000000; stroke-opacity: 0.80; fill: #FFC125; fill-opacity: 0.80;' />
 <rect x='218.74' y='22.40' width='207.78' height='116.12' style='stroke-width: 1.07; stroke: #333333;' />
 </g>
 <g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHwxNDQuMDA=)'>

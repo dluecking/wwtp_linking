@@ -102,7 +102,7 @@ nodes_df <- nodes_df %>%
 
 
 # Build graph with Louvain clustering -------------------------------------
-cat("Building graph and performing Louvain clustering (resolution = 3)...\n")
+cat("Building graph and performing Louvain clustering (resolution = 10)...\n")
 
 graph <- graph_from_data_frame(
   d = big_connection_df_filtered %>% select(from, to, type, weight),
@@ -130,7 +130,7 @@ plv_vph <- c(plvs, vphs)
 
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- gvs
+list_of_sequences_to_print <- plv_vph
 
 
 # Process sequences -------------------------------------------------------

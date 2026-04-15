@@ -91,7 +91,7 @@ for(t in c(unique(big_connection_df_filtered$type), "none")){
   )
   
   # Weighted Louvain clustering
-  communities <- cluster_louvain(graph, weights = E(graph)$weight, resolution = 5)
+  communities <- cluster_louvain(graph, weights = E(graph)$weight, resolution = 10)
   
   # Extract membership
   membership_df <- data.frame(

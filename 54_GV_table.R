@@ -58,14 +58,14 @@ crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 # load general data -------------------------------------------------------
 
 # URL of the Google Sheet
-sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c"
+sheet_url <- "https://docs.google.com/spreadsheets/d/159KaIRGjUGnN8uIJVsG42HIvWQ8MG2dysxNbNqw0VBg/edit?usp=sharing"
 
 # Read the specified sheet and convert to data.table
-gv_data <- read_sheet(sheet_url, sheet = "Final GVs overview")
+gv_data <- read_sheet(sheet_url, sheet = "Table S1")
 
 gv_data <- gv_data %>% 
-  filter(completeness %in% c("complete", "likely complete")) %>% 
-  select(public_ID, shortname, sample, length, gc, personal_assessment_order, circular, completeness, ORFs, ncldv_hits, `tRNA (aragorn)`, padloc, crispr_array)
+  # filter(completeness %in% c("complete", "likely complete")) %>% # we take all now!
+  select(public_ID, shortname, sample, length, `%GC`, order, circular, completeness, ORFs, ncldv_hits, tRNAs, padloc)
 
 # fill in CRISPR data
 gv_data$crispr_cas <- ""
@@ -107,11 +107,11 @@ for(i in 1:nrow(gv_data)){
 # create table ------------------------------------------------------------
 # Corrected create table code with proper function order
 gv_table <- gv_data %>%
-  arrange(personal_assessment_order, completeness, public_ID) %>%
+  arrange(order, completeness, public_ID) %>%
   mutate(length_plot = length) %>%
   select(
-    public_ID, personal_assessment_order, completeness,
-    length, length_plot, gc, ORFs, circular, ncldv_hits, padloc, 
+    public_ID, order, completeness,
+    length, length_plot, `%GC`, ORFs, circular, ncldv_hits, padloc, 
     # crispr_array, crispr_cas,
     tRNA, tRNA_list
   ) %>%
@@ -133,9 +133,9 @@ gv_table <- gv_data %>%
   # ) %>%
   
   data_color(
-    columns = gc,
+    columns = `%GC`,
     palette = c("lightblue", "steelblue", "darkblue"),
-    domain = c(20, 60)
+    domain = c(20, 66)
   ) %>%
   
   text_transform(
@@ -159,11 +159,11 @@ gv_table <- gv_data %>%
   
   cols_label(
     public_ID = "Genome ID",
-    personal_assessment_order = "Predicted Order",
+    order = "Predicted Order",
     completeness = "Completeness",
     length = "Length (bp)",
     length_plot = "Length (plot)",
-    gc = "GC-content (%)",
+    `%GC` = "GC-content (%)",
     ORFs = "ORFs",
     circular = "Topology",
     ncldv_hits = "Marker Genes",
