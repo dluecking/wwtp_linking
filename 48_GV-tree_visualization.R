@@ -20,15 +20,14 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # load auxiliary data -----------------------------------------------------
 
-GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474", 
-                      sheet = "Final GVs overview") %>% 
-  filter(!is.na(sample))
+GV_info <- read_sheet("https://docs.google.com/spreadsheets/d/159KaIRGjUGnN8uIJVsG42HIvWQ8MG2dysxNbNqw0VBg/edit?gid=697074736#gid=697074736", 
+                      sheet = "Table S1") 
 
 GV_info$tip_label <- GV_info$shortname
 
 
 nuphylo_GV_data <- fread("helperfiles/NuPhylo_itol_colors.csv")
-
+nuphylo_GV_data$Order[nuphylo_GV_data$Order == "Pandoravirales"] <- '"Pandoravirales"'
 
 # add info to tree_data ---------------------------------------------------
 
@@ -54,17 +53,17 @@ tree_data <- tree_data %>%
 
 # but now lets add family information so we can color!
 tree_data <- tree_data %>%
-  left_join(GV_info %>% select(tip_label, personal_assessment_order, public_ID),
+  left_join(GV_info %>% select(tip_label, order, public_ID),
             by = "tip_label") %>%
   left_join(nuphylo_GV_data %>% select(Genome, Order),
             by = c("tip_label" = "Genome")) %>%
   mutate(
     tax_order = case_when(
-      source == "this study" ~ personal_assessment_order,
+      source == "this study" ~ order,
       source == "reference" ~ Order
     )
   ) %>% 
-  select(-Order, -personal_assessment_order)
+  select(-Order, -order)
 
 # add the yaravirales one
 tree_data$tax_order[tree_data$tip_label == "lcl|MT293574.1_prot_QKE44413.1"] <- "Yaravirales"
@@ -152,11 +151,12 @@ tree %<+% tree_data +
              color = "black", offset = 0.02, size = 0.3) +
   scale_fill_manual(guide = guide_legend(title = "Order", ncol = 1),
                     values = c(
-                      "Yaravirales"     = "#007A99FF",  # teal
+                      '"Yaravirales"'     = "#007A99FF",  # teal
                       "Asfuvirales"     = "#00AACCFF",  # orange
-                      "Pimascovirales"  = "#66F0FFFF",  # purple
+                      "Pimascovirales"  = "#00d6ed",  # purple
+                      '"Pandoravirales"'  = "#CCFDFFFF",  # magenta
                       "Pandoravirales"  = "#CCFDFFFF",  # magenta
-                      "Imitervirales"   = "#D9AF98FF",  # green
+                      "Imitervirales"   = "#b4934b",  # green
                       "Chitovirales"    = "#CC9B7AFF",  # mustard
                       "Proculvirales"   = "#F2DACEFF",  # brown
                       "Algavirales"     = "#662F00",  # blue
@@ -169,13 +169,10 @@ tree %<+% tree_data +
              mapping = aes(y = tip_label, fill = completeness),
              color = "black", offset = 0.03, size = 0.3) +
   scale_fill_manual(
-    values = c("complete" = "#333333", 
-               "likely complete" = "#666666", 
-               "likely incomplete" = "#999999", 
-               "incomplete" = "#E5E5E5",
-               "not assessed" = "white"),
+    values = c("complete" = "grey20",      # Blue (high quality)
+               "draft" = "grey80",         # Light blue (lower quality)
+               "not assessed" = "white"),   # White (no assessment)
     na.value = "white",
-    na.translate = FALSE,  # suppress legend item and display for NA
     guide = guide_legend(title = "Completeness")
   ) +
   # Point showing circularity
@@ -204,7 +201,7 @@ tree %<+% tree_data +
         legend.key.size = unit(0.25, "cm"),
         plot.margin = unit(c(2,2,0.5,0.8), "cm"),
         legend.spacing.y = unit(0.1, "cm")) +
-  xlim_tree(c(NA, 5)) +
+  xlim_tree(c(NA, 4.2)) +
   geom_nodepoint(
     mapping = aes(subset = !is.na(as.numeric(label)) & as.numeric(label) > 0.75), # Or > 0.95 for LPP
     color = "black",
