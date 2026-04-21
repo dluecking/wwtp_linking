@@ -47,9 +47,9 @@ contig_df <- contig_df %>%
 
 # Load taxonomy information -----------------------------------------------
 # GV info
-sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c/edit?gid=1228834474#gid=1228834474"
-GV_info <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
-  select(shortname, personal_assessment_order, public_ID) %>% 
+sheet_url <- "https://docs.google.com/spreadsheets/d/159KaIRGjUGnN8uIJVsG42HIvWQ8MG2dysxNbNqw0VBg/edit?gid=697074736#gid=697074736"
+GV_info <- read_sheet(sheet_url, sheet = "Table S1") %>% 
+  select(shortname, order, public_ID) %>% 
   drop_na(shortname)
 
 # VPH and PLV info
@@ -92,15 +92,17 @@ for(i in 1:nrow(contig_df)){
 }
 
 
-# Load CRISPR data --------------------------------------------------------
-crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv") %>% 
-  filter(bitscore >= 100)
-crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
+# # Load CRISPR data --------------------------------------------------------
+# crispr_df <- fread("intermediate/CRISPR/cassette/HMM2019_cassettes.csv") %>% 
+#   filter(bitscore >= 100)
+# crispr_df$contig_id <- str_remove(crispr_df$V1, "\\_\\d+\\_ID.*$")
 
 
 # Load edge lists ---------------------------------------------------------
-edgelist_crispr <- fread("intermediate/network/crispr.csv") %>%
-  filter(str_ends(from, "_lc")) # removal of non-MC edges
+# edgelist_crispr <- fread("intermediate/network/crispr.csv") %>%
+  # filter(str_ends(from, "_lc")) # removal of non-MC edges
+# CRISPR is completely removed!
+
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
 edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
@@ -165,7 +167,7 @@ names(occurance_edges) <- c("edge_id", "from", "to", "spearman_ill", "correlatio
 cat("\n=== Creating combined edge dataframe with weights ===\n")
 
 # Define weight constants (adjust these to tune clustering behavior)
-WEIGHT_CRISPR <- 100
+# WEIGHT_CRISPR <- 100
 WEIGHT_GENE_SHARING <- 1
 WEIGHT_INTEGRATION_BOUNDARY <- 100
 WEIGHT_INTEGRATION_MIDDLE <- 100
@@ -191,9 +193,10 @@ occurance_edges <- occurance_edges %>%
 
 big_connection_df <- rbind(
   # High-confidence mechanistic evidence
-  edgelist_crispr %>% 
-    select(from, to, value = "crispr") %>% 
-    mutate(type = "crispr", weight = WEIGHT_CRISPR),
+  # edgelist_crispr %>% 
+  #   select(from, to, value = "crispr") %>% 
+  #   mutate(type = "crispr", weight = WEIGHT_CRISPR),
+  # CRISPR IS COMPLETELY REMOVED!
   
   edgelist_gene_sharing %>% 
     select(from, to, value = "gene_sharing") %>% 
@@ -233,15 +236,6 @@ big_connection_df <- rbind(
     ) %>%
     select(from, to, value, type, weight)
 )
-
-cat("Edge weights configured:\n")
-cat("  Mechanistic evidence (CRISPR/integration/genes):", WEIGHT_CRISPR, "\n")
-cat("  Co-occurrence (very strong ≥", SPEARMAN_VERY_STRONG, "):", 
-    WEIGHT_COOCCUR_VERY_STRONG_POS, "(pos),", WEIGHT_COOCCUR_VERY_STRONG_NEG, "(neg)\n")
-cat("  Co-occurrence (strong ≥", SPEARMAN_STRONG, "):", 
-    WEIGHT_COOCCUR_STRONG_POS, "(pos),", WEIGHT_COOCCUR_STRONG_NEG, "(neg)\n")
-cat("  Co-occurrence (moderate):", 
-    WEIGHT_COOCCUR_MODERATE_POS, "(pos),", WEIGHT_COOCCUR_MODERATE_NEG, "(neg)\n\n")
 
 
 # add membership information ----------------------------------------------
@@ -300,7 +294,7 @@ fwrite(big_connection_df_filtered, "intermediate/network/network_analysis/big_co
 fwrite(contig_df, "intermediate/network/network_analysis/contig_df.csv")
 fwrite(GV_info, "intermediate/network/network_analysis/GV_info.csv")
 fwrite(vph_plv_combined_info, "intermediate/network/network_analysis/vph_plv_combined_info.csv")
-fwrite(crispr_df, "intermediate/network/network_analysis/crispr_df.csv")
+# fwrite(crispr_df, "intermediate/network/network_analysis/crispr_df.csv")
 fwrite(lc_tax_info_short, "intermediate/network/network_analysis/lc_tax_info_short.csv")
 
 cat("\n=== Data preparation complete ===\n")

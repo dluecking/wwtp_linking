@@ -25,7 +25,7 @@ big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_c
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
 GV_info <- fread("intermediate/network/network_analysis/GV_info.csv")
 vph_plv_combined_info <- fread("intermediate/network/network_analysis/vph_plv_combined_info.csv")
-crispr_df <- fread("intermediate/network/network_analysis/crispr_df.csv")
+# crispr_df <- fread("intermediate/network/network_analysis/crispr_df.csv")
 lc_tax_info_short <- fread("intermediate/network/network_analysis/lc_tax_info_short.csv")
 membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership_005.csv")
 
@@ -121,7 +121,7 @@ cat("Found", max(V(graph)$louvain_group), "Louvain communities\n\n")
 
 # User configuration ------------------------------------------------------
 SINGLE_MODE <- FALSE
-CONTIG_OF_INTEREST <- "Bjer_2_3"
+CONTIG_OF_INTEREST <- "Lyne_tig00046032-10-146580_plv"
 SAVE_PLOT <- TRUE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
@@ -130,7 +130,7 @@ plv_vph <- c(plvs, vphs)
 
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- plv_vph
+list_of_sequences_to_print <- gvs
 
 
 # Process sequences -------------------------------------------------------
@@ -176,34 +176,34 @@ for(contig in list_of_sequences_to_print){
   # Get public IDs with NA handling
   small_node_df$public_ID <- small_node_df$id
   
-  # Add CRISPR info
-  small_node_df$cas_genes <- ""
-  for(i in 1:nrow(small_node_df)){
-    if(small_node_df$contig_type[i] == "vph"){
-      small_node_df$cas_genes[i] <- "Not applicable"
-      next
-    }
-    
-    # For LC clusters, check all members
-    if(grepl("LC_CLUSTER", small_node_df$id[i])){
-      member_ids <- membership_df %>% 
-        filter(cluster_id == small_node_df$id[i]) %>% 
-        pull(contig_id)
-      tmp_df <- crispr_df %>% filter(contig_id %in% member_ids)
-    } else {
-      tmp_df <- crispr_df %>% filter(contig_id == small_node_df$id[i])
-    }
-    
-    if(nrow(tmp_df) >= 1){
-      cas_genes <- tmp_df %>% 
-        pull(annotation) %>% 
-        unique() %>% 
-        paste(collapse = ", ")
-    } else {
-      cas_genes <- "None detected"
-    }
-    small_node_df$cas_genes[i] <- cas_genes
-  }
+  # # Add CRISPR info
+  # small_node_df$cas_genes <- ""
+  # for(i in 1:nrow(small_node_df)){
+  #   if(small_node_df$contig_type[i] == "vph"){
+  #     small_node_df$cas_genes[i] <- "Not applicable"
+  #     next
+  #   }
+  #   
+  #   # For LC clusters, check all members
+  #   if(grepl("LC_CLUSTER", small_node_df$id[i])){
+  #     member_ids <- membership_df %>% 
+  #       filter(cluster_id == small_node_df$id[i]) %>% 
+  #       pull(contig_id)
+  #     tmp_df <- crispr_df %>% filter(contig_id %in% member_ids)
+  #   } else {
+  #     tmp_df <- crispr_df %>% filter(contig_id == small_node_df$id[i])
+  #   }
+  #   
+  #   if(nrow(tmp_df) >= 1){
+  #     cas_genes <- tmp_df %>% 
+  #       pull(annotation) %>% 
+  #       unique() %>% 
+  #       paste(collapse = ", ")
+  #   } else {
+  #     cas_genes <- "None detected"
+  #   }
+  #   small_node_df$cas_genes[i] <- cas_genes
+  # }
   
   small_edge_df <- big_connection_df_filtered %>%
     filter(from %in% small_node_df$id & to %in% small_node_df$id)
@@ -216,7 +216,7 @@ for(contig in list_of_sequences_to_print){
   }
   
   # Add is_directed flag to edges
-  directed_types <- c("crispr", "integration_boundary", "integration_middle")
+  directed_types <- c("integration_boundary", "integration_middle")
   small_edge_df$is_directed <- small_edge_df$type %in% directed_types
   
   # Build subgraph (undirected)
@@ -262,8 +262,8 @@ for(contig in list_of_sequences_to_print){
         data_id = public_ID,
         tooltip = paste("Node ID:", public_ID,
                         "\nType:", node_type,
-                        "\nTaxonomy:", tax_info,
-                        "\nCas genes:", cas_genes),
+                        "\nTaxonomy:", tax_info),
+        # "\nCas genes:", cas_genes),
         color = if_else(is_focal, "black", "black"),
         stroke = if_else(is_focal, 1, 0.3)
       )
@@ -293,7 +293,7 @@ for(contig in list_of_sequences_to_print){
       labeller = labeller(
         edge_type = c(
           "gene_sharing" = "Gene Sharing",
-          "crispr" = "CRISPR",
+          # "crispr" = "CRISPR",
           # "non_crispr" = "Repeats", # removed!
           "integration_boundary" = "Integration (boundary)",
           "integration_middle" = "Integration (middle)",
@@ -348,6 +348,7 @@ for(contig in list_of_sequences_to_print){
     n_processed <- n_processed + 1
   }
 }
+
 
 cat("\n=== Subgraph visualization complete ===\n")
 cat("Processed:", n_processed, "contigs\n")

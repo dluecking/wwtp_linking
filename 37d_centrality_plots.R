@@ -298,7 +298,8 @@ for(layer in unique(big_connection_df_filtered$type)){
       lc = "seagreen",
       plv = "hotpink",
       gv = "steelblue"
-    ))
+    )
+  )
   
   p_layer <- deg_plot_layer + bet_plot_layer
   
