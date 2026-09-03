@@ -111,7 +111,8 @@ gv_table <- gv_data %>%
   mutate(length_plot = length) %>%
   select(
     public_ID, order, completeness,
-    length, length_plot, `%GC`, ORFs, circular, ncldv_hits, padloc, 
+    length, length_plot, `%GC`, ORFs, circular, ncldv_hits, 
+    # padloc, 
     # crispr_array, crispr_cas,
     tRNA, tRNA_list
   ) %>%
@@ -125,12 +126,6 @@ gv_table <- gv_data %>%
     columns = length_plot,
     after = length
   ) %>%
-  
-  # # move the crispr cas after the cas array
-  # cols_move(
-  #   columns = crispr_cas,
-  #   after = crispr_array
-  # ) %>%
   
   data_color(
     columns = `%GC`,
@@ -146,15 +141,17 @@ gv_table <- gv_data %>%
   
   gt_badge(
     column = completeness,
-    palette = c("complete" = "darkgreen", "likely complete" = "lightgreen")
+    palette = c("complete" = "darkgreen", "draft" = "lightgreen")
   ) %>%
   
   # --- General Formatting ---
   fmt_number(columns = length, decimals = 0) %>%
   
   tab_header(
-    title = md("**Nucleocytoviruses identified in this study**"),
-    subtitle = "Key genomic features of complete and likely complete NCVs."
+    title = md("**Table 1: Overview of key genomic features of identified Nucleocytoviricota.**"),
+    subtitle = "Overview of features for NCVs recovered in this study, including genome length, GC-content,
+    number of ORFs, genome topology (circle indicates circular genome, line indicates linear genome), 
+    number of marker genes detected, number and type of tRNAs detected"
   ) %>%
   
   cols_label(
@@ -168,10 +165,7 @@ gv_table <- gv_data %>%
     circular = "Topology",
     ncldv_hits = "Marker Genes",
     tRNA = "# tRNAs",
-    tRNA_list = "tRNA sequences",
-    padloc = "Defensive System"
-    # crispr_array = "# CRISPR Spacers"
-    # crispr_cas = "CRISPR-Cas Genes"
+    tRNA_list = "tRNA sequences"
   ) %>%
   
   fmt_missing(columns = everything(), missing_text = "-") %>%
@@ -191,10 +185,10 @@ gv_table
 library(webshot2)
 library(pagedown)
 
-gtsave(gv_table, filename = "final/ncv_table.html")
+gtsave(gv_table, filename = "final/table_1.html")
 pagedown::chrome_print(
-  "final/ncv_table.html", 
-  "final/ncv_table.pdf",
+  "final/table_1.html", 
+  "final/table_1.pdf",
   options = list(
     paperWidth = 8.27,       # A4 width in inches
     paperHeight = 11.69,     # A4 height in inches

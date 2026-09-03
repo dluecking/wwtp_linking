@@ -106,7 +106,6 @@ tree_data <- tree_data %>%
     )
   )
 
-
 # which which line type do we want to have
 tree_data <- tree_data %>% 
   mutate(
@@ -119,15 +118,17 @@ tree_data <- tree_data %>%
   )
 
 
-
-
 # vis tree ----------------------------------------------------------------
+
+# change procul to "procul"
+tree_data$tax_order[tree_data$tax_order == "Proculvirales"] <- '"Proculvirales"'
+tree_data$tax_order[tree_data$tax_order == "Yaravirales"] <- '"Yaravirales"'
 
 # first re-root to poxvirius (we dont have pokkes)
 aster_tree <- ape::root(aster_tree, outgroup = "Poxviridae_AF198100_Fowlpox_virus", edgelabel = TRUE)
 
 # midpoint rooting, only used once:
-midpoint_tree <- phangorn::midpoint(aster_tree)
+# midpoint_tree <- phangorn::midpoint(aster_tree)
 
 tree <- ggtree(aster_tree, layout = "fan", open.angle = 180)
 # %>%
@@ -158,7 +159,7 @@ tree %<+% tree_data +
                       "Pandoravirales"  = "#CCFDFFFF",  # magenta
                       "Imitervirales"   = "#b4934b",  # green
                       "Chitovirales"    = "#CC9B7AFF",  # mustard
-                      "Proculvirales"   = "#F2DACEFF",  # brown
+                      '"Proculvirales"'   = "#F2DACEFF",  # brown
                       "Algavirales"     = "#662F00",  # blue
                       "unknown"         = "grey80"    # light grey
                     ),

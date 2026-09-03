@@ -85,8 +85,10 @@ p2 <- ggplot(eggnog_df %>%
   ylab("Count") +
   xlab(NULL) +
   theme_cowplot() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 8),
-        legend.position = "None") 
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1, size = 8),
+    legend.position = "none"
+  )
 
 p_combined <- p1 + p2 + plot_layout(widths = c(1, 6))  
 p_combined

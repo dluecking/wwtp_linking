@@ -21,7 +21,7 @@ rm(list = ls())
 
 
 # Load prepared data ------------------------------------------------------
-big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv")
+big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered_REVIEW.csv")
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
 GV_info <- fread("intermediate/network/network_analysis/GV_info.csv")
 vph_plv_combined_info <- fread("intermediate/network/network_analysis/vph_plv_combined_info.csv")
@@ -121,7 +121,7 @@ cat("Found", max(V(graph)$louvain_group), "Louvain communities\n\n")
 
 # User configuration ------------------------------------------------------
 SINGLE_MODE <- FALSE
-CONTIG_OF_INTEREST <- "Lyne_tig00046032-10-146580_plv"
+CONTIG_OF_INTEREST <- "Viby_tig00043866-10-124870_vph"
 SAVE_PLOT <- TRUE
 
 plvs <- str_remove(list.files("intermediate/contigs/plv"), "\\.fna")
@@ -130,7 +130,7 @@ plv_vph <- c(plvs, vphs)
 
 gvs <- GV_info$shortname
 
-list_of_sequences_to_print <- gvs
+list_of_sequences_to_print <- plv_vph
 
 
 # Process sequences -------------------------------------------------------
@@ -175,35 +175,6 @@ for(contig in list_of_sequences_to_print){
   
   # Get public IDs with NA handling
   small_node_df$public_ID <- small_node_df$id
-  
-  # # Add CRISPR info
-  # small_node_df$cas_genes <- ""
-  # for(i in 1:nrow(small_node_df)){
-  #   if(small_node_df$contig_type[i] == "vph"){
-  #     small_node_df$cas_genes[i] <- "Not applicable"
-  #     next
-  #   }
-  #   
-  #   # For LC clusters, check all members
-  #   if(grepl("LC_CLUSTER", small_node_df$id[i])){
-  #     member_ids <- membership_df %>% 
-  #       filter(cluster_id == small_node_df$id[i]) %>% 
-  #       pull(contig_id)
-  #     tmp_df <- crispr_df %>% filter(contig_id %in% member_ids)
-  #   } else {
-  #     tmp_df <- crispr_df %>% filter(contig_id == small_node_df$id[i])
-  #   }
-  #   
-  #   if(nrow(tmp_df) >= 1){
-  #     cas_genes <- tmp_df %>% 
-  #       pull(annotation) %>% 
-  #       unique() %>% 
-  #       paste(collapse = ", ")
-  #   } else {
-  #     cas_genes <- "None detected"
-  #   }
-  #   small_node_df$cas_genes[i] <- cas_genes
-  # }
   
   small_edge_df <- big_connection_df_filtered %>%
     filter(from %in% small_node_df$id & to %in% small_node_df$id)
@@ -323,10 +294,10 @@ for(contig in list_of_sequences_to_print){
     
     if(type_of_contig %in% c("plv", "vph")){
       public_ID <- vph_plv_combined_info$public_ID[vph_plv_combined_info$contig_ID == contig]
-      FILE_BASE <- paste0("final/plv_vph_subcluster/", public_ID) 
+      FILE_BASE <- paste0("final/plv_vph_subcluster_REVIEW/", public_ID) 
     } else {
       public_ID <- GV_info$public_ID[GV_info$shortname == contig]
-      FILE_BASE <- paste0("final/gv_subcluster/", public_ID)
+      FILE_BASE <- paste0("final/gv_subcluster_REVIEW/", public_ID)
     }
     
     FACETS <- length(unique(small_edge_df$type))

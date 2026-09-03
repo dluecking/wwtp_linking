@@ -53,7 +53,6 @@ protein_accessions <- as.data.table(protein_accessions)
 
 # get to contig_id
 protein_accessions$contig_id <- str_remove(str_remove(str_remove(protein_accessions$protein_accessions, "\\s.*$"), "\\_\\d*$"), ">")
-
 protein_numbers <- as.data.table(table(protein_accessions$contig_id))
 
 
@@ -62,7 +61,7 @@ protein_numbers <- as.data.table(table(protein_accessions$contig_id))
 summary_table$genes_per_contig <- protein_numbers$N[match(summary_table$from, protein_numbers$V1)]
 summary_table$gene_sharing <- summary_table$genes_shared / summary_table$genes_per_contig
 
-fwrite(summary_table %>% filter(gene_sharing >= CUTOFF) %>% select(from, to, gene_sharing), file = "intermediate/network/gene_sharing.csv")
+# fwrite(summary_table %>% filter(gene_sharing >= CUTOFF) %>% select(from, to, gene_sharing), file = "intermediate/network/gene_sharing.csv")
 
 
 

@@ -53,10 +53,11 @@ GV_info <- read_sheet(sheet_url, sheet = "Table S1") %>%
   drop_na(shortname)
 
 # VPH and PLV info
-sheet_url <- "https://docs.google.com/spreadsheets/d/1CnqcfhOfS0rVBU6mvyCKrm50BmxJjVvif47f9vkQZgU/edit?gid=836958150#gid=836958150"
-vph_info <- read_sheet(sheet_url, sheet = "Table S4") %>% 
+sheet_url <- "https://docs.google.com/spreadsheets/d/159KaIRGjUGnN8uIJVsG42HIvWQ8MG2dysxNbNqw0VBg/edit?gid=948384767#gid=948384767"
+vph_info <- read_sheet(sheet_url, sheet = "Table S5") %>% 
   select(contig_ID, public_ID)
-plv_info <- read_sheet(sheet_url, sheet = "Table S5") %>% 
+
+plv_info <- read_sheet(sheet_url, sheet = "Table S6") %>% 
   select(contig_ID, public_ID)
 vph_plv_combined_info <- rbind(vph_info, plv_info)
 
@@ -105,7 +106,10 @@ for(i in 1:nrow(contig_df)){
 
 edgelist_integration_b <- fread("intermediate/network/integration_b.csv")
 edgelist_integration_m <- fread("intermediate/network/integration_m.csv")
-edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
+
+# for review purposes:
+# edgelist_gene_sharing <- fread("intermediate/network/gene_sharing.csv")
+edgelist_gene_sharing <- fread("intermediate/network/REVIEW_gene_sharing.csv")
 edgelist_occurance_ill <- fread("intermediate/network/occurance_ill_strat.csv") 
 edgelist_occurance_ont <- fread("intermediate/network/occurance_ont_strat.csv")
 
@@ -166,9 +170,9 @@ names(occurance_edges) <- c("edge_id", "from", "to", "spearman_ill", "correlatio
 
 cat("\n=== Creating combined edge dataframe with weights ===\n")
 
-# Define weight constants (adjust these to tune clustering behavior)
-# WEIGHT_CRISPR <- 100
-WEIGHT_GENE_SHARING <- 1
+# Define weight constants
+
+WEIGHT_GENE_SHARING <- 1 # THIS IS NOT USED FURTHER DOWN, but a raw_score formula
 WEIGHT_INTEGRATION_BOUNDARY <- 100
 WEIGHT_INTEGRATION_MIDDLE <- 100
 
@@ -192,15 +196,9 @@ occurance_edges <- occurance_edges %>%
   )
 
 big_connection_df <- rbind(
-  # High-confidence mechanistic evidence
-  # edgelist_crispr %>% 
-  #   select(from, to, value = "crispr") %>% 
-  #   mutate(type = "crispr", weight = WEIGHT_CRISPR),
-  # CRISPR IS COMPLETELY REMOVED!
-  
   edgelist_gene_sharing %>% 
-    select(from, to, value = "gene_sharing") %>% 
-    mutate(type = "gene_sharing", weight = WEIGHT_GENE_SHARING),
+    select(from, to, value = "raw_score", raw_score) %>% 
+    mutate(type = "gene_sharing", weight = 1 + value * 9) ,
   
   edgelist_integration_b %>% 
     select(from, to, value = "integration_b") %>% 
@@ -290,11 +288,11 @@ big_connection_df_filtered <- big_connection_df_filtered %>%
 
 # Save prepared data ------------------------------------------------------
 # Save as CSV where possible (main dataframes)
-fwrite(big_connection_df_filtered, "intermediate/network/network_analysis/big_connection_df_filtered.csv")
+fwrite(big_connection_df_filtered, "intermediate/network/network_analysis/big_connection_df_filtered_REVIEW.csv")
+# fwrite(big_connection_df_filtered, "intermediate/network/network_analysis/big_connection_df_filtered.csv")
 fwrite(contig_df, "intermediate/network/network_analysis/contig_df.csv")
 fwrite(GV_info, "intermediate/network/network_analysis/GV_info.csv")
 fwrite(vph_plv_combined_info, "intermediate/network/network_analysis/vph_plv_combined_info.csv")
-# fwrite(crispr_df, "intermediate/network/network_analysis/crispr_df.csv")
 fwrite(lc_tax_info_short, "intermediate/network/network_analysis/lc_tax_info_short.csv")
 
 cat("\n=== Data preparation complete ===\n")

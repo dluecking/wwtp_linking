@@ -10,7 +10,8 @@
 module load Conda
 conda activate /lisc/data/scratch/dome/willemsen/luecking/conda/conda_envs/R
 
-Rscript scripts/prepare_gene_sharing.R 
+# Rscript scripts/prepare_gene_sharing.R 
+Rscript scripts/REVIEW_prepare_gene_sharing.R 
 
 echo "done!"
 

@@ -56,7 +56,7 @@ plv_df <- read_sheet("https://docs.google.com/spreadsheets/d/113hSsqFV73bfdHTs5W
 
 
 # load tree data ----------------------------------------------------------
-tree <- read.tree("intermediate/treebuilding/all_public_and_my_own_MCP_proteins_cleaned.aln.treefile")
+tree <- read.tree("intermediate/treebuilding/all_public_and_my_own_MCP_proteins_trimal.aln.treefile")
 
 tree_data <- data.table(tip_label = tree$tip.label,
                         short_id = "",

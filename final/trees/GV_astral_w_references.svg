@@ -830,7 +830,7 @@
 <text transform='translate(444.39,212.38) rotate(-29)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.97px' lengthAdjust='spacingAndGlyphs'>Vibo_NCV-As_1</text>
 <text transform='translate(442.59,209.18) rotate(-30)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='35.78px' lengthAdjust='spacingAndGlyphs'>Damh_NCV-As_3</text>
 <text transform='translate(438.79,202.90) rotate(-33)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='35.78px' lengthAdjust='spacingAndGlyphs'>Damh_NCV-As_2</text>
-<text transform='translate(451.08,225.45) rotate(-24)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_2</text>
+<text transform='translate(451.08,225.45) rotate(-24)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='33.08px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-As_1</text>
 <text transform='translate(452.58,228.80) rotate(-23)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.11px' lengthAdjust='spacingAndGlyphs'>Bjer_NCV-As_2</text>
 <text transform='translate(454.04,232.17) rotate(-22)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.11px' lengthAdjust='spacingAndGlyphs'>Bjer_NCV-As_3</text>
 <text transform='translate(276.24,110.69) rotate(-88)' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.83px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Pa_1</text>
@@ -923,7 +923,7 @@
 <text transform='translate(229.34,115.01) rotate(-281)' text-anchor='end' style='font-size: 4.41px; font-family: "Arial";' textLength='70.36px' lengthAdjust='spacingAndGlyphs'>Emiliania_huxleyi_virus (KF481685)</text>
 <text transform='translate(243.80,112.46) rotate(-277)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.83px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Pa_3</text>
 <text transform='translate(265.74,110.65) rotate(-270)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='36.73px' lengthAdjust='spacingAndGlyphs'>OdNW_NCV-Pa_2</text>
-<text transform='translate(158.93,145.21) rotate(-303)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_3</text>
+<text transform='translate(158.93,145.21) rotate(-303)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_2</text>
 <text transform='translate(155.92,147.32) rotate(-305)' text-anchor='end' style='font-size: 4.41px; font-family: "Arial";' textLength='51.12px' lengthAdjust='spacingAndGlyphs'>Indivirus ILV1 (KY684085)</text>
 <text transform='translate(144.29,156.27) rotate(-310)' text-anchor='end' style='font-size: 4.41px; font-family: "Arial";' textLength='71.14px' lengthAdjust='spacingAndGlyphs'>Tupanvirus deep ocean (MF405918)</text>
 <text transform='translate(150.02,151.68) rotate(-307)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='33.14px' lengthAdjust='spacingAndGlyphs'>Lyne_NCV-Im_3</text>
@@ -934,11 +934,11 @@
 <text transform='translate(130.71,168.61) rotate(-315)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.23px' lengthAdjust='spacingAndGlyphs'>Viby_NCV-Im_1</text>
 <text transform='translate(138.72,161.05) rotate(-312)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='35.27px' lengthAdjust='spacingAndGlyphs'>OdNE_NCV-Im_1</text>
 <text transform='translate(168.20,139.26) rotate(-301)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='30.62px' lengthAdjust='spacingAndGlyphs'>Hirt_NCV-Im_1</text>
-<text transform='translate(128.12,171.22) rotate(-315)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_4</text>
+<text transform='translate(128.12,171.22) rotate(-315)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_3</text>
 <text transform='translate(123.11,176.58) rotate(-317)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='34.05px' lengthAdjust='spacingAndGlyphs'>Rand_NCV-Im_1</text>
 <text transform='translate(125.59,173.87) rotate(-316)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='34.05px' lengthAdjust='spacingAndGlyphs'>Rand_NCV-Im_2</text>
 <text transform='translate(109.35,193.77) rotate(-324)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='31.84px' lengthAdjust='spacingAndGlyphs'>Hjor_NCV-Im_2</text>
-<text transform='translate(86.50,235.54) rotate(-337)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_5</text>
+<text transform='translate(86.50,235.54) rotate(-337)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_4</text>
 <text transform='translate(81.57,249.37) rotate(-342)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='32.58px' lengthAdjust='spacingAndGlyphs'>Fred_NCV-Im_1</text>
 <text transform='translate(73.04,292.50) rotate(-355)' text-anchor='end' style='font-size: 4.41px; font-weight: bold; font-family: "Arial";' textLength='33.38px' lengthAdjust='spacingAndGlyphs'>Lyne_NCV-un_2</text>
 <text transform='translate(74.27,281.56) rotate(-352)' text-anchor='end' style='font-size: 4.41px; font-family: "Arial";' textLength='44.38px' lengthAdjust='spacingAndGlyphs'>Mimiviridae ChoanoV1</text>
@@ -997,7 +997,7 @@
 <polygon points='445.45,261.36 450.38,260.01 451.26,263.33 446.31,264.59 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
 <polygon points='444.54,258.14 449.44,256.70 450.38,260.01 445.45,261.36 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
 <polygon points='446.31,264.59 451.26,263.33 452.07,266.67 447.10,267.84 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
-<polygon points='448.51,274.38 453.52,273.39 454.16,276.77 449.13,277.66 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter;' />
+<polygon points='448.51,274.38 453.52,273.39 454.16,276.77 449.13,277.66 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
 <polygon points='403.56,186.15 407.30,182.67 409.62,185.21 405.81,188.62 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='401.26,183.72 404.94,180.17 407.30,182.67 403.56,186.15 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='405.81,188.62 409.62,185.21 411.89,187.80 408.02,191.13 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
@@ -1015,7 +1015,7 @@
 <polygon points='420.25,207.02 424.46,204.13 426.38,206.99 422.11,209.79 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='423.92,212.60 428.24,209.87 430.05,212.80 425.68,215.45 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='429.04,221.23 433.51,218.74 435.15,221.76 430.64,224.16 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
-<polygon points='433.68,230.12 438.27,227.88 439.75,230.99 435.11,233.14 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #B4934B;' />
+<polygon points='433.68,230.12 438.27,227.88 439.75,230.99 435.11,233.14 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='435.11,233.14 439.75,230.99 441.16,234.12 436.49,236.18 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='436.49,236.18 441.16,234.12 442.52,237.28 437.81,239.26 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <polygon points='437.81,239.26 442.52,237.28 443.83,240.46 439.08,242.35 ' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #F2DACE;' />
@@ -1470,29 +1470,29 @@
 <rect x='490.87' y='396.15' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
 <rect x='491.29' y='396.58' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #CCFDFF;' />
 <rect x='490.87' y='403.24' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='403.66' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
+<rect x='491.29' y='403.66' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #F2DACE;' />
 <rect x='490.87' y='410.32' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='410.75' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #662F00;' />
+<rect x='491.29' y='410.75' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #007A99;' />
 <rect x='490.87' y='417.41' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='417.84' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
+<rect x='491.29' y='417.84' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #662F00;' />
 <rect x='490.87' y='424.50' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='424.92' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #CC9B7A;' />
+<rect x='491.29' y='424.92' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00AACC;' />
 <rect x='490.87' y='431.58' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='432.01' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #B4934B;' />
+<rect x='491.29' y='432.01' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #CC9B7A;' />
 <rect x='490.87' y='438.67' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='439.10' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00D6ED;' />
+<rect x='491.29' y='439.10' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #B4934B;' />
 <rect x='490.87' y='445.76' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
-<rect x='491.29' y='446.18' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #F2DACE;' />
+<rect x='491.29' y='446.18' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #00D6ED;' />
 <rect x='490.87' y='452.84' width='7.09' height='7.09' style='stroke-width: 1.07; stroke: #FFFFFF; fill: #FFFFFF;' />
 <rect x='491.29' y='453.27' width='6.24' height='6.24' style='stroke-width: 0.64; stroke-linecap: butt; stroke-linejoin: miter; fill: #CCCCCC;' />
 <text x='503.43' y='401.84' style='font-size: 6.00px; font-family: "Arial";' textLength='44.31px' lengthAdjust='spacingAndGlyphs'>"Pandoravirales"</text>
-<text x='503.43' y='408.93' style='font-size: 6.00px; font-family: "Arial";' textLength='33.83px' lengthAdjust='spacingAndGlyphs'>"Yaravirales"</text>
-<text x='503.43' y='416.02' style='font-size: 6.00px; font-family: "Arial";' textLength='29.36px' lengthAdjust='spacingAndGlyphs'>Algavirales</text>
-<text x='503.43' y='423.10' style='font-size: 6.00px; font-family: "Arial";' textLength='29.36px' lengthAdjust='spacingAndGlyphs'>Asfuvirales</text>
-<text x='503.43' y='430.19' style='font-size: 6.00px; font-family: "Arial";' textLength='31.36px' lengthAdjust='spacingAndGlyphs'>Chitovirales</text>
-<text x='503.43' y='437.28' style='font-size: 6.00px; font-family: "Arial";' textLength='32.36px' lengthAdjust='spacingAndGlyphs'>Imitervirales</text>
-<text x='503.43' y='444.36' style='font-size: 6.00px; font-family: "Arial";' textLength='40.36px' lengthAdjust='spacingAndGlyphs'>Pimascovirales</text>
-<text x='503.43' y='451.45' style='font-size: 6.00px; font-family: "Arial";' textLength='34.36px' lengthAdjust='spacingAndGlyphs'>Proculvirales</text>
+<text x='503.43' y='408.93' style='font-size: 6.00px; font-family: "Arial";' textLength='38.61px' lengthAdjust='spacingAndGlyphs'>"Proculvirales"</text>
+<text x='503.43' y='416.02' style='font-size: 6.00px; font-family: "Arial";' textLength='33.83px' lengthAdjust='spacingAndGlyphs'>"Yaravirales"</text>
+<text x='503.43' y='423.10' style='font-size: 6.00px; font-family: "Arial";' textLength='29.36px' lengthAdjust='spacingAndGlyphs'>Algavirales</text>
+<text x='503.43' y='430.19' style='font-size: 6.00px; font-family: "Arial";' textLength='29.36px' lengthAdjust='spacingAndGlyphs'>Asfuvirales</text>
+<text x='503.43' y='437.28' style='font-size: 6.00px; font-family: "Arial";' textLength='31.36px' lengthAdjust='spacingAndGlyphs'>Chitovirales</text>
+<text x='503.43' y='444.36' style='font-size: 6.00px; font-family: "Arial";' textLength='32.36px' lengthAdjust='spacingAndGlyphs'>Imitervirales</text>
+<text x='503.43' y='451.45' style='font-size: 6.00px; font-family: "Arial";' textLength='40.36px' lengthAdjust='spacingAndGlyphs'>Pimascovirales</text>
 <text x='503.43' y='458.54' style='font-size: 6.00px; font-family: "Arial";' textLength='24.05px' lengthAdjust='spacingAndGlyphs'>unknown</text>
 <rect x='485.39' y='468.25' width='45.55' height='37.09' style='stroke-width: 1.07; stroke: none;' />
 <text x='490.87' y='479.47' style='font-size: 7.00px; font-weight: bold; font-family: "Arial";' textLength='34.59px' lengthAdjust='spacingAndGlyphs'>Circularity</text>

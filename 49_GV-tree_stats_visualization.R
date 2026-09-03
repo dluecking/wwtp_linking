@@ -19,61 +19,60 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 
 # URL of the Google Sheet
-sheet_url <- "https://docs.google.com/spreadsheets/d/1QLNiqSt0XOS4xVPAeZAppwVjjjPIKdEE6w6f2_Qm55c"
+sheet_url <- "https://docs.google.com/spreadsheets/d/159KaIRGjUGnN8uIJVsG42HIvWQ8MG2dysxNbNqw0VBg/edit?gid=697074736#gid=697074736"
 
 # Read the specified sheet and convert to data.table
-gv_data <- read_sheet(sheet_url, sheet = "Final GVs overview") %>% 
-  filter(personal_assessment_order != "remove")
+gv_data <- read_sheet(sheet_url, sheet = "Table S1")
 
 
-# for ViBioM poster -------------------------------------------------------
+
+# viz ---------------------------------------------------------------------
+
+# colors
+order_colors <- c(
+  '"Yaravirales"' = "#0B3D5C",
+  "Asfuvirales" = "#F2DACEFF",
+  "Imitervirales" = "#b4934b",
+  '"Pandoravirales"' = "#CCFDFFFF",
+  "Pimascovirales" = "#00d6ed",
+  "unknown" = "grey80"
+)
 
 gv_data <- as.data.frame(gv_data)
-gv_data <- gv_data %>% 
-  mutate(gc = as.numeric(gv_data$gc))
 
 
-p1 <- ggplot(gv_data, aes(x = personal_assessment_order, y = length, fill = personal_assessment_order)) +
+p1 <- ggplot(gv_data, aes(x = order, y = length, fill = order)) +
   geom_boxplot(alpha = 0.9) +
   xlab("") +
-  ylab("Length [bp]") +
+  ylab("Length [Mbp]") +
   theme_cowplot() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_text(size = 9),
+  theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_blank(),
         legend.position = "none") +
   scale_fill_manual(
     name = "Category",
-    values = c(
-      "Yaravirales" = "#007A99FF",
-      "Asfuvirales" = "#00AACCFF",
-      "Imitervirales" = "#D9AF98FF",
-      "Pandoravirales" = "#CCFDFFFF",
-      "Pimascovirales" = "#66F0FFFF",
-      "unknown" = "grey80"
-    )
+    values = order_colors
   ) +
-  scale_y_continuous(labels = scales::scientific)
+  scale_y_continuous(
+    labels = scales::label_number(scale = 1/1e6),
+    breaks = c(100e3, 500e3, 1e6, 1500e3)
+  ) +
+  coord_flip()
 
 
-p2 <- ggplot(gv_data, aes(x = personal_assessment_order, y = gc, fill = personal_assessment_order)) +
+p2 <- ggplot(gv_data, aes(x = order, y = `%GC`, fill = order)) +
   geom_boxplot(alpha = 0.9) +
   xlab("") +
   ylab("GC [%]") +
   theme_cowplot() +
   theme(legend.position = "none",
         axis.text.y = element_text(size = 10),
-        axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3)) +
+        axis.text.x = element_text(size = 10)) +
   scale_fill_manual(
     name = "Category",
-    values = c(
-      "Yaravirales" = "#007A99FF",
-      "Asfuvirales" = "#00AACCFF",
-      "Imitervirales" = "#D9AF98FF",
-      "Pandoravirales" = "#CCFDFFFF",
-      "Pimascovirales" = "#66F0FFFF",
-      "unknown" = "grey80"
-    )
-  )
+    values = order_colors
+  ) +
+  coord_flip()
 
 # add ORFan information for each GV ---------------------------------------
 
@@ -89,41 +88,30 @@ for(i in 1:nrow(gv_data)){
 
 gv_data$ORFan_perc <- round((gv_data$ORFs - gv_data$annotated_ORFs) / gv_data$ORFs * 100, 2)
 
-p3 <- ggplot(gv_data, aes(x = personal_assessment_order, y = ORFan_perc, fill = personal_assessment_order)) +
+p3 <- ggplot(gv_data, aes(x = order, y = ORFan_perc, fill = order)) +
   geom_boxplot(alpha = 0.9) +
   xlab("") +
   ylab("ORFans [%]") +
   theme_cowplot() +
-  theme(axis.text.x = element_blank(),
-        axis.text.y = element_text(size = 9),
+  theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_blank(),
         legend.position = "none") +
   scale_fill_manual(
     name = "Category",
-    values = c(
-      "Yaravirales" = "#007A99FF",
-      "Asfuvirales" = "#00AACCFF",
-      "Imitervirales" = "#D9AF98FF",
-      "Pandoravirales" = "#CCFDFFFF",
-      "Pimascovirales" = "#66F0FFFF",
-      "unknown" = "grey80"
-    )
+    values = order_colors
   ) +
-  ylim(c(33, 100))
+  ylim(c(33, 100)) +
+  coord_flip()
 
 
 
 
-p_composite <- p1 / p3 / p2 
+p_composite <- p2 + p1 + p3 
 p_composite
 
-ggsave(plot = p_composite, file = "final/gv_stats.pdf", height = 5, width = 4)
-ggsave(plot = p_composite, file = "final/gv_stats.svg", height = 5, width = 4)
-ggsave(plot = p_composite, file = "final/gv_stats.png", height = 5, width = 4)
-
-
-
-
-
+ggsave(plot = p_composite, file = "final/gv_stats.pdf", height = 3, width = 8)
+ggsave(plot = p_composite, file = "final/gv_stats.svg", height = 3, width = 8)
+ggsave(plot = p_composite, file = "final/gv_stats.png", height = 3, width = 8)
 
 
 
@@ -137,10 +125,10 @@ ggsave(plot = p_composite, file = "final/gv_stats.png", height = 5, width = 4)
 # setDT(gv_data)
 # 
 # # Count completeness per taxonomic order
-# completeness_summary <- gv_data[, .N, by = .(personal_assessment_order, completeness)]
+# completeness_summary <- gv_data[, .N, by = .(order, completeness)]
 # 
 # # Plot
-# ggplot(completeness_summary, aes(x = personal_assessment_order, y = N, fill = completeness)) +
+# ggplot(completeness_summary, aes(x = order, y = N, fill = completeness)) +
 #   geom_bar(stat = "identity", position = "fill", color = "black") +  # proportions instead of raw count
 #   theme_minimal() +
 #   labs(x = "Taxonomic Order", y = "Proportion of Genomes", fill = "Completeness") +
@@ -165,14 +153,14 @@ ggsave(plot = p_composite, file = "final/gv_stats.png", height = 5, width = 4)
 # gv_data <- gv_data %>% 
 #   mutate(gc = as.numeric(gv_data$gc))
 # 
-# p1 <- ggplot(gv_data, aes(x = personal_assessment_order, y = gc)) +
+# p1 <- ggplot(gv_data, aes(x = order, y = gc)) +
 #   geom_boxplot() +
 #   coord_flip() +
 #   xlab("") +
 #   ylab("GC [%]") +
 #   theme_cowplot()
 # 
-# p2 <- ggplot(gv_data, aes(x = personal_assessment_order, y = length)) +
+# p2 <- ggplot(gv_data, aes(x = order, y = length)) +
 #   geom_boxplot() +
 #   coord_flip() +
 #   xlab("") +

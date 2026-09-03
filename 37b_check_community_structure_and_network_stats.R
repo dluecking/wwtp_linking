@@ -21,7 +21,7 @@ dir.create("intermediate/network/network_analysis/scale_free_analysis", recursiv
 
 
 # Load prepared data ------------------------------------------------------
-big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered.csv")
+big_connection_df_filtered <- fread("intermediate/network/network_analysis/big_connection_df_filtered_REVIEW.csv")
 contig_df <- fread("intermediate/network/network_analysis/contig_df.csv")
 membership_df <- fread("intermediate/mash/lc_contigs_only_cluster_membership_005.csv")
 
